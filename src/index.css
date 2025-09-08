@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+/* index.css */
+@import "leaflet/dist/leaflet.css";
+
+
+/* Add in your global.css or index.css */
+.perspective {
+  perspective: 1500px;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
