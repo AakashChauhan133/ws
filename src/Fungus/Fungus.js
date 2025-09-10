@@ -9,6 +9,47 @@ import {
 } from "recharts";
 import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
+import rawSensorData from './data.json';
+
+// console.log(rawSensorData);
+
+
+// Helper function to process the raw sensor data
+function processSensorData(rawData) {
+  const WETNESS_THRESHOLD = 0.3; // Leaf is considered "wet" if factor > 0.3
+
+  // 1. Filter for time intervals where leaves were wet
+  const wetIntervals = rawData.filter(
+    (d) => d.leaf_wetness_factor > WETNESS_THRESHOLD
+  );
+
+  // 2. Calculate total hours of wetness
+  // Each interval is 0.5 hours (30 minutes)
+  const totalWetnessHours = wetIntervals.length * 0.5;
+
+  // 3. Calculate the average temperature ONLY during the wet periods
+  const sumOfWetTemperatures = wetIntervals.reduce(
+    (sum, interval) => sum + interval.temperature_celcius,
+    0
+  );
+  const avgTempDuringWetness =
+    wetIntervals.length > 0 ? sumOfWetTemperatures / wetIntervals.length : 0;
+
+  // 4. Calculate the average humidity over the entire day for Powdery Mildew
+  const sumOfHumidity = rawData.reduce(
+    (sum, interval) => sum + interval.humidity_percentage,
+    0
+  );
+  const overallAvgHumidity =
+    rawData.length > 0 ? sumOfHumidity / rawData.length : 0;
+
+  // 5. Return the calculated metrics
+  return {
+    totalWetnessHours,
+    avgTempDuringWetness: parseFloat(avgTempDuringWetness.toFixed(2)), // Round to 2 decimal places
+    overallAvgHumidity: parseFloat(overallAvgHumidity.toFixed(2)),
+  };
+}
 
 
 // ----------------------------
@@ -115,68 +156,36 @@ export default function Fungus() {
   const [loading, setLoading] = useState(true);
 
   // Select first device automatically
-  useEffect(() => {
-    if (!devicesLoading && devices.length > 0 && !selectedDevice) {
-      setSelectedDevice(devices[0]);
-    }
-  }, [devicesLoading, devices, selectedDevice]);
+  // useEffect(() => {
+  //   if (!devicesLoading && devices.length > 0 && !selectedDevice) {
+  //     setSelectedDevice(devices[0]);
+  //   }
+  // }, [devicesLoading, devices, selectedDevice]);
 
   // Fetch weekly data when device changes
   useEffect(() => {
-    if (!selectedDevice) return;
+    setLoading(true);
+    
+    const metrics = processSensorData(rawSensorData);
 
-    async function fetchWeeklyData() {
-      try {
-        setLoading(true);
-        const res = await axios.get(
-          `${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=weekly`,
-          { withCredentials: true }
-        );
+    const {totalWetnessHours, avgTempDuringWetness, overallAvgHumidity } = metrics;
 
-      console.log("Server response:", res.data);
-        const rawData = res.data.data || [];
+    console.log("Calculated Metrics:", metrics);
 
-        if (!Array.isArray(rawData) || rawData.length === 0) {
-          setFungusData([]);
-          setLoading(false);
-          return;
-        }
+    const calculatedData = [
+      { name: "Apple Scab", ...calculateAppleScab(avgTempDuringWetness, totalWetnessHours)},
+      { name: "Alternaria Blotch", ...calculateAlternaria(avgTempDuringWetness, totalWetnessHours)},
+      { name: "Marssonina Blotch", ...calculateMarssonina(avgTempDuringWetness, totalWetnessHours)},
+      { name: "Powdery Mildew", ...calculatePowderyMildew(avgTempDuringWetness, overallAvgHumidity)},
+      { name: "Cedar - Apple Rust", ...calculateCedarRust(avgTempDuringWetness, totalWetnessHours)},
+      { name: "Black Rot", ...calculateBlackRot(avgTempDuringWetness, totalWetnessHours)},
+      { name: "Bitter Rot", ...calculateBitterRot(avgTempDuringWetness, totalWetnessHours)}
+    ];
 
-        // Compute averages
-        const avgTemp =
-          rawData.reduce((sum, d) => sum + parseFloat(d.temp || 0), 0) /
-          rawData.length;
-        const avgHumidity =
-          rawData.reduce((sum, d) => sum + parseFloat(d.humidity || 0), 0) /
-          rawData.length;
+    setFungusData(calculatedData);
+    setLoading(false);
 
-        // If you have direct wetnessHours in API use that; otherwise approximate from rainfall
-        const avgWetness =
-          rawData.reduce(
-            (sum, d) => sum + parseFloat(d.rainfall || 0),
-            0
-          ) / rawData.length;
-
-        const calculatedData = [
-          { name: "Apple Scab", ...calculateAppleScab(avgTemp, avgWetness) },
-          { name: "Alternaria Blotch", ...calculateAlternaria(avgTemp, avgWetness) },
-          { name: "Marssonina Blotch", ...calculateMarssonina(avgTemp, avgWetness) },
-          { name: "Powdery Mildew", ...calculatePowderyMildew(avgTemp, avgHumidity) },
-          { name: "Cedar - Apple Rust", ...calculateCedarRust(avgTemp, avgWetness) },
-          { name: "Black Rot", ...calculateBlackRot(avgTemp, avgWetness) },
-          { name: "Bitter Rot", ...calculateBitterRot(avgTemp, avgWetness) },
-        ];
-
-        setFungusData(calculatedData);
-      } catch (err) {
-        console.error("Error fetching weekly fungus data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchWeeklyData();
-  }, [selectedDevice]);
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-white text-black">
