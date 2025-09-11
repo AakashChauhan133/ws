@@ -64,8 +64,7 @@ function Layout() {
 
 function App() {
   return (
-    // <Router basename="/station">
-    <Router>
+    <Router basename="/station">
       <AuthProvider>
         <Layout />
       </AuthProvider>
