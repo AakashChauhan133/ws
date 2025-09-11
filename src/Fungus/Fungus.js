@@ -159,8 +159,7 @@ export default function Fungus() {
   // This array will be merged with your SQL data.
   const leafWetnessFactors = [
     0.15, 0.18, 0.22, 0.25, 0.28, 0.30, 0.33, 0.35, 0.38, 0.40, 0.43, 0.45, 0.48
-  ];
-
+  ]; 
   // Select first device automatically
   useEffect(() => {
     if (!devicesLoading && devices.length > 0 && !selectedDevice) {
