@@ -11,6 +11,7 @@ import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
 import rawSensorData from './data.json';
 
+
 // console.log(rawSensorData);
 
 
@@ -155,37 +156,74 @@ export default function Fungus() {
   const [fungusData, setFungusData] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // This array will be merged with your SQL data.
+  const leafWetnessFactors = [
+    0.15, 0.18, 0.22, 0.25, 0.28, 0.30, 0.33, 0.35, 0.38, 0.40, 0.43, 0.45, 0.48
+  ]; 
   // Select first device automatically
-  // useEffect(() => {
-  //   if (!devicesLoading && devices.length > 0 && !selectedDevice) {
-  //     setSelectedDevice(devices[0]);
-  //   }
-  // }, [devicesLoading, devices, selectedDevice]);
+  useEffect(() => {
+    if (!devicesLoading && devices.length > 0 && !selectedDevice) {
+      setSelectedDevice(devices[0]);
+    }
+  }, [devicesLoading, devices, selectedDevice]);
 
   // Fetch weekly data when device changes
   useEffect(() => {
-    setLoading(true);
-    
-    const metrics = processSensorData(rawSensorData);
+    // Don't run if no device is selected
+    if (!selectedDevice) return;
 
-    const {totalWetnessHours, avgTempDuringWetness, overallAvgHumidity } = metrics;
+    const fetchDataAndProcess = async () => {
+      setLoading(true);
+      try {
+        // --- STEP 1: Fetch main sensor data from your SQL API ---
+        const response = await axios.get(
+          `${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=weekly`, // Ensure this endpoint returns raw 24-hour data
+          { withCredentials: true }
+        );
+        // Rename keys to match what processSensorData expects, if necessary
 
-    console.log("Calculated Metrics:", metrics);
+        console.log("SQL Data: ",response.data.data);
 
-    const calculatedData = [
-      { name: "Apple Scab", ...calculateAppleScab(avgTempDuringWetness, totalWetnessHours)},
-      { name: "Alternaria Blotch", ...calculateAlternaria(avgTempDuringWetness, totalWetnessHours)},
-      { name: "Marssonina Blotch", ...calculateMarssonina(avgTempDuringWetness, totalWetnessHours)},
-      { name: "Powdery Mildew", ...calculatePowderyMildew(avgTempDuringWetness, overallAvgHumidity)},
-      { name: "Cedar - Apple Rust", ...calculateCedarRust(avgTempDuringWetness, totalWetnessHours)},
-      { name: "Black Rot", ...calculateBlackRot(avgTempDuringWetness, totalWetnessHours)},
-      { name: "Bitter Rot", ...calculateBitterRot(avgTempDuringWetness, totalWetnessHours)}
-    ];
+        const sqlData = (response.data.data || []).map(item => ({
+            temperature_celcius: parseFloat(item.temp),
+            humidity_percentage: parseFloat(item.humidity)
+            //... map other fields if their names differ
+        }));
 
-    setFungusData(calculatedData);
-    setLoading(false);
 
-  }, []);
+        // --- STEP 2: Create a lookup map from the local JSON file ---
+        const mergedData = sqlData.map((record, index) => ({
+          ...record,
+          leaf_wetness_factor: leafWetnessFactors[index] || 0, // Default to 0 if arrays differ in length
+        }));
+
+        // --- STEP 4: Process the complete, merged data ---
+        const metrics = processSensorData(mergedData);
+        
+        console.log("Calculated Metrics from Merged Data:", metrics);
+
+        const calculatedData = [
+          { name: "Apple Scab", ...calculateAppleScab(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
+          { name: "Alternaria Blotch", ...calculateAlternaria(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
+          { name: "Marssonina Blotch", ...calculateMarssonina(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
+          { name: "Powdery Mildew", ...calculatePowderyMildew(metrics.avgTempDuringWetness, metrics.overallAvgHumidity)},
+          { name: "Cedar - Apple Rust", ...calculateCedarRust(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
+          { name: "Black Rot", ...calculateBlackRot(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
+          { name: "Bitter Rot", ...calculateBitterRot(metrics.avgTempDuringWetness, metrics.totalWetnessHours)}
+        ];
+
+        setFungusData(calculatedData);
+
+      } catch (err) {
+        console.error("Failed to fetch or process sensor data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDataAndProcess();
+  }, [selectedDevice]); // Re-runs when device changes
+
 
   return (
     <div className="flex h-screen overflow-hidden bg-white text-black">
