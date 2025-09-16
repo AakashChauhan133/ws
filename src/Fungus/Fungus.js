@@ -9,11 +9,7 @@ import {
 } from "recharts";
 import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
-import rawSensorData from './data.json';
-
-
-// console.log(rawSensorData);
-
+import GaugeChart from 'react-gauge-chart';
 
 // Helper function to process the raw sensor data
 function processSensorData(rawData) {
@@ -137,6 +133,18 @@ function calculateBitterRot(temp, wetnessHours) {
     return { value: 50, status: "Medium" };
   return { value: 0, status: "No Risk" };
 }
+
+// --- Utility for coloring the status badges ---
+const getStatusColor = (status) => {
+  switch (status) {
+    case "High":
+      return "bg-red-100 text-red-700";
+    case "Medium":
+      return "bg-yellow-100 text-yellow-700";
+    default:
+      return "bg-green-100 text-green-700";
+  }
+};
 
 // ----------------------------
 // Utility: Zone Color
@@ -269,11 +277,16 @@ export default function Fungus() {
             {fungusData.map((fungus, idx) => (
               <div
                 key={idx}
-                className="relative bg-white shadow-md rounded-2xl p-6 flex flex-col items-center hover:shadow-lg transition"
+                className="relative bg-white border-4 rounded-2xl p-6 flex flex-col items-center hover:shadow-lg transition"
               >
                 {/* Gauge */}
                 <ResponsiveContainer width={200} height={200}>
-                  <RadialBarChart
+                  <GaugeChart
+                    percent={(fungus.value ?? 0) / 100}
+                    colors={["#22c55e", "#facc15", "#ef4444"]}
+                    arcWidth={0.3}
+                    hideText="true"
+                    textColor="#1f2937"
                     innerRadius="70%"
                     outerRadius="100%"
                     data={[
@@ -293,31 +306,24 @@ export default function Fungus() {
                       background={{ fill: "#e5e7eb" }}
                       clockWise
                     />
-                  </RadialBarChart>
+                  </GaugeChart>
                 </ResponsiveContainer>
 
                 {/* Centered % */}
-                <div className="absolute top-1/2 transform -translate-y-1/2 text-center">
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="absolute top-1/2 transform text-center">
+                  <p className="text-2xl font-bold text-gray-900 pb-2">
                     {fungus.value}%
+                  </p>
+                  {/* Info */}
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {fungus.name}
+                  </h3>
+                  <p className={`mt-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fungus.status)}`}>
+                    {fungus.status}
                   </p>
                 </div>
 
-                {/* Info */}
-                <h3 className="mt-3 text-lg font-semibold text-gray-800 text-center">
-                  {fungus.name}
-                </h3>
-                <p
-                  className={`mt-1 px-3 py-1 rounded-full text-sm font-medium ${
-                    fungus.status === "High"
-                      ? "bg-red-100 text-red-700"
-                      : fungus.status === "Medium"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-green-100 text-green-700"
-                  }`}
-                >
-                  {fungus.status}
-                </p>
+                
               </div>
             ))}
           </div>
