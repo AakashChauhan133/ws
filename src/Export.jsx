@@ -80,13 +80,17 @@ export default function Export() {
         console.log(endDate);   // end date
         console.log(startDate); // start date
 
+        // getting the data on the basis of start date and end date
         const response = await axios.get(
           `${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=custom&from=${startDate}&to=${endDate}`,
           { withCredentials: true }
         );
         const data = response.data.data || [];
 
-        console.log(data);
+        // Reversing the rows
+        data.reverse();
+
+        // console.log(data);  debugging
 
         setTableData(data);
       } catch (err) {
