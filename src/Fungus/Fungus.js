@@ -9,11 +9,6 @@ import {
 } from "recharts";
 import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
-import rawSensorData from './data.json';
-
-
-// console.log(rawSensorData);
-
 
 // Helper function to process the raw sensor data
 function processSensorData(rawData) {
