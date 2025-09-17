@@ -27,7 +27,7 @@ const fetchDeviceData = async (deviceId, range) => {
 
     // getting the data on the basis of start date and end date
     const response = await axios.get(
-      `${API_BASE_URL}/devices/${deviceId}/history?range=custom&from=${startDate}&to=${endDate}`,
+      `${API_BASE_URL}/devices/${deviceId}/history?range=${range}`,
       { withCredentials: true }
     );
 
@@ -57,7 +57,52 @@ const fetchDeviceData = async (deviceId, range) => {
 
 
 const fetchDailyData = (deviceId) => fetchDeviceData(deviceId, "daily");
-const fetchWeeklyData = (deviceId) => fetchDeviceData(deviceId, "weekly");
+const fetchWeeklyData = async (deviceId) =>  {
+  try {
+    // Get the current date
+    const today = new Date();
+
+    // Get the day, month, and year
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const year = today.getFullYear();
+
+    // Assemble the formatted date string
+    const endDate = `${day}-${month}-${year}`;
+    const startDate = `${day - 8}-${month}-${year}`;
+
+    console.log(endDate);   // end date
+    console.log(startDate); // start date
+
+    // getting the data on the basis of start date and end date
+    const response = await axios.get(
+      `${API_BASE_URL}/devices/${deviceId}/history?range=custom&from=${startDate}&to=${endDate}`,
+      { withCredentials: true }
+    );
+
+    const rawData = response.data.data || [];
+
+    // Map API keys to chart keys
+    const mappedData = rawData.map((item) => ({
+      time: item.timestamp, // adjust if API has a proper timestamp
+      temperature: parseFloat(item.temp),
+      humidity: parseFloat(item.humidity),
+      aqi: parseFloat(item.aqi),
+      light: parseFloat(item.light_intensity),
+      rainfall: parseFloat(item.rainfall),
+      wind: parseFloat(item.wind_speed),
+      depthHumidity: parseFloat(item.depth_humidity),
+      depthTemp: parseFloat(item.depth_temp),
+      surfaceHumidity: parseFloat(item.surface_humidity),
+      surfaceTemp: parseFloat(item.surface_temp),
+    }));
+
+    return mappedData;
+  } catch (err) {
+    console.error(`Error fetching data:`, err);
+    return [];
+  }
+};
 const fetchMonthlyData = (deviceId) => fetchDeviceData(deviceId, "monthly");
 
 export default function WeeklyOverview() {
