@@ -39,7 +39,7 @@ export default function DeviceLocation({ selectedDevice }) {
   }, [selectedDevice]);
 
   return (
-    <div className="border p-4 rounded shadow hover:shadow-lg">
+    <div className="border p-4 rounded-lg shadow hover:shadow-lg">
       <h2 className="text-lg font-semibold mb-2 text-green-700">Device Location</h2>
       <p><strong>Latitude:</strong> {latitude}</p>
       <p><strong>Longitude:</strong> {longitude}</p>
