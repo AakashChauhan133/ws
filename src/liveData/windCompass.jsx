@@ -13,6 +13,7 @@ const getWindDetails = (speed, direction) => {
 
     return { rotation };
 };
+// yes
 
 // --- The Simplified Wind Compass Component ---
 const WindCompass = ({ windSpeed, windDirection }) => {
