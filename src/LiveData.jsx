@@ -167,6 +167,7 @@ useEffect(() => {
 
 // console.log('time',liveData?.timestamp)
 // console.log("history data", historyData)
+console.log('min',extremes?.temp?.min.value);
 
   return (
     <div className="flex h-screen overflow-hidden">

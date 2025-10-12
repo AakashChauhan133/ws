@@ -11,7 +11,7 @@ const KisanChatbot = () => {
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [thinkingText, setThinkingText] = useState("Thinking...");
+    const [thinkingText, setThinkingText] = useState("Assessing foliage 🌿");
     const messagesEndRef = useRef(null);
 
     const { devices, devicesLoading } = useAuth();
@@ -79,7 +79,7 @@ const KisanChatbot = () => {
         setIsLoading(true);
 
         try {
-            const response = await axios.post('https://kesanai.onrender.com/ask', {
+            const response = await axios.post('http://127.0.0.1:5000/ask', {
                 question: (question + `Device ID: ${selectedDevice}`)
             });
             const aiMessage = { from: 'ai', text: response.data.answer };

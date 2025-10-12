@@ -18,7 +18,7 @@ const formatTime = (timestamp, isShort = false) => {
 };
 
 // --- The Enhanced Humidity Component ---
-const SimpleHumidityCard = ({ humidityValue, minValue, minTime, maxValue, maxTime, noData = true }) => {
+const SimpleHumidityCard = ({ humidityValue, minValue, minTime, maxValue, maxTime, noData}) => {
     const displayHumidity = Math.round(humidityValue || 0);
     const details = getHumidityDetails(displayHumidity);
 

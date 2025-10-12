@@ -23,12 +23,12 @@ const WindCompass = ({ windSpeed, windDirection }) => {
 
     return (
         <div className="border-2 bg-white rounded-2xl p-8 flex flex-col items-center text-gray-800 h-full justify-between shadow-md transition duration-300 ease-in-out hover:shadow-lg">
-            <h3 className="text-lg font-semibold text-gray-500">Wind</h3>
+            <h3 className="text-lg font-semibold text-gray-500 py-4">Wind</h3>
             
             {/* Main Display Area */}
             <div className="flex flex-col items-center justify-center flex-grow text-center">
                 {/* Speed Display */}
-                <div>
+                <div className='py-8'>
                     <span className="text-7xl font-black text-gray-800">
                         {Math.round(speed)}
                     </span>
@@ -39,7 +39,7 @@ const WindCompass = ({ windSpeed, windDirection }) => {
             </div>
             
             {/* Data Display */}
-            <div className="text-center z-10">
+            <div className="text-center z-10 py-4">
                 <p className="text-lg font-bold text-gray-800">
                    From the {direction} ({Math.round(rotation)}°)
                 </p>

@@ -24,10 +24,9 @@ const formatTime = (timestamp) => {
 };
 
 // --- The Redesigned Temperature Card Component ---
-const TempCard = ({ tempValue, minValue, minTime, maxValue, maxTime, noData = true }) => {
+const TempCard = ({ tempValue, minValue, minTime, maxValue, maxTime, noData }) => {
     const temp = Math.round(tempValue || 0);
     const details = getTempDetails(temp);
-    const mercuryHeight = 110 * (details.percentage / 100);
 
     return (
         <div className={`bg-gradient-to-br ${details.bg} rounded-xl border-2 border-white p-6 flex flex-col justify-between text-center h-full shadow-md transition duration-300 ease-in-out hover:shadow-lg`}>
