@@ -119,7 +119,7 @@ useEffect(() => {
     });
   };
 
-  // Run the fetch immediately when the component mounts or selectedDevice changes
+  // Run the fetch immediately when the component mounts or selectedDevice changess
   fetchLiveData();
 
   // Set up the interval to run the fetch every 15 minutes (900000 ms)
