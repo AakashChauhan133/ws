@@ -30,11 +30,11 @@ const LightIntensityGauge = ({ luxValue }) => {
     const details = getLuxDetails(displayLux);
 
     return (
-        <div className={`relative bg-gradient-to-br ${details.bg} rounded-xl p-8 flex flex-col justify-between items-center text-center border-2 border-white transition-all duration-1000 overflow-hidden shadow-md transition duration-300 ease-in-out hover:shadow-lg`}>
+        <div className={`relative bg-gradient-to-br ${details.bg} rounded-xl p-10 flex flex-col justify-between items-center text-center border-2 border-white transition-all duration-1000 overflow-hidden shadow-md transition duration-300 ease-in-out hover:shadow-lg`}>
             {displayLux < 1000 && <Starfield />}
             
             <div className="relative z-10 w-full">
-                <h3 className="text-lg font-semibold text-white opacity-80">Light Intensity</h3>
+                <h3 className="text-xl font-bold text-white opacity-80">Light Intensity</h3>
             </div>
 
             {/* Emoji Visualization Area */}

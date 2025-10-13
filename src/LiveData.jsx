@@ -15,6 +15,9 @@ import WindCompass from './liveData/windCompass';
 import RainfallCard from './liveData/rainfallCard';
 import DeviceInfoCard from './liveData/deviceInfo';
 import SimpleHumidityCard from './liveData/humidity';
+import Spinner from './components/spinner';
+import PressureCard from './liveData/pressure';
+import LeafWetnessCard from './liveData/leafWetness';
 
 const now = new Date();
 const currentHour = now.getHours();
@@ -30,7 +33,7 @@ export default function LiveData() {
   const buttonRef = useRef(null);
 
   const [liveData, setLiveData] = useState(null);
-  const [liveDataLoading, setLiveDataLoading] = useState(false);
+  const [liveDataLoading, setLiveDataLoading] = useState(true);
 
   const [historyData, setHistoryData] = useState([]);
   const [extremes, setExtremes] = useState({});
@@ -86,18 +89,24 @@ useEffect(() => {
     }
   }, [devicesLoading, devices, selectedDevice]);
 
-  // Fetch live data whenever device changes
-  useEffect(() => {
-    if (!selectedDevice) return;
 
+  
+  useEffect(() => {
+  // Guard clause to ensure we have a device to fetch data for
+  if (!selectedDevice) {
+    // Return a cleanup function that does nothing, to avoid errors
+    return () => {}; 
+  }
+
+  // Function to fetch the data
+  const fetchLiveData = () => {
     setLiveDataLoading(true);
     axios.get(`${API_BASE_URL}/live-data/${selectedDevice.d_id}`, {
       withCredentials: true
     })
     .then(res => {
       if (res.data.status) {
-        // console.log(res.data);
-        setLiveData(res.data.data[0]); // store first object
+        setLiveData(res.data.data[0]);
       } else {
         console.error(res.data.message);
       }
@@ -108,8 +117,21 @@ useEffect(() => {
     .finally(() => {
       setLiveDataLoading(false);
     });
+  };
 
-  }, [selectedDevice]);
+  // Run the fetch immediately when the component mounts or selectedDevice changes
+  fetchLiveData();
+
+  // Set up the interval to run the fetch every 15 minutes (900000 ms)
+  const intervalId = setInterval(fetchLiveData, 15 * 60 * 1000); 
+
+  // Return a cleanup function that clears the interval
+  return () => {
+    clearInterval(intervalId);
+    console.log("Interval cleared.");
+  };
+
+}, [selectedDevice]);
 
   // Fetch daily history
 useEffect(() => {
@@ -131,6 +153,7 @@ useEffect(() => {
       setHistoryData([]);
       setNoData(true); // ✅ also handle API error
     });
+
 }, [selectedDevice]);
 
 // Compute min/max for each field
@@ -165,9 +188,13 @@ useEffect(() => {
   setExtremes(result);
 }, [historyData]);
 
+if (liveDataLoading) {
+  return <Spinner/>
+}
+
 // console.log('time',liveData?.timestamp)
 // console.log("history data", historyData)
-console.log('min',extremes?.temp?.min.value);
+// console.log('min',extremes?.temp?.min.value);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -235,75 +262,98 @@ console.log('min',extremes?.temp?.min.value);
           <p className="text-red-500 mt-6">{devicesError}</p>
         ) : (
           <>
-            {/* Device Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              <DeviceInfoCard selectedDevice={selectedDevice} hour={currentHour}/>
-              <DeviceLocation selectedDevice={selectedDevice}  />
+
+              {/* Device Info Card */}
+              <DeviceInfoCard 
+                selectedDevice={selectedDevice} 
+                hour={currentHour}
+              />
+              
+              {/* Device Location Card */}
+              <DeviceLocation 
+                selectedDevice={selectedDevice}  
+              />
             </div>
 
-            
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-6">
+              {/* Temperature Card */}
+              <TempCard 
+                tempValue={liveData?.temp}
+                minValue={extremes?.temp?.min.value} 
+                minTime={extremes?.temp?.min.time} 
+                maxValue={extremes?.temp?.max.value}
+                maxTime={extremes?.temp?.max.time}
+              />
 
-            
-            {/* Sensor Data Cards */}
-            {/* Sensor Data Cards */}
-<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pt-6">
-  {/* Temperature Card */}
-  <TempCard 
-    tempValue={liveData?.temp}
-    minValue={extremes?.temp?.min.value} 
-    minTime={extremes?.temp?.min.time} 
-    maxValue={extremes?.temp?.max.value}
-    maxTime={extremes?.temp?.max.time}/>
+              {/* Rainfall */}
+              <RainfallCard 
+                rainfallValue={liveData?.rainfall} 
+              /> 
 
-  {/* Rainfall */}
-  <RainfallCard rainfallValue={liveData?.rainfall} /> 
+              {/* Light Intensity */}
+              <LightIntensityGauge 
+                luxValue={liveData?.light_intensity}
+              />
 
-  {/* Light Intensity */}
-  <LightIntensityGauge luxValue={liveData?.light_intensity}></LightIntensityGauge>
+              {/* Leaf Wetness */}
+              < LeafWetnessCard wetnessHours={0.6} />
 
-  {/* Humidity Gauge */}
-  <SimpleHumidityCard 
-    humidityValue={liveData?.humidity}
-    minValue={extremes?.humidity?.min.value} 
-    minTime={extremes?.humidity?.min.time} 
-    maxValue={extremes?.humidity?.max.value}
-    maxTime={extremes?.humidity?.max.time} />  
+              {/* Humidity Gauge */}
+              <SimpleHumidityCard 
+                humidityValue={liveData?.humidity}
+                minValue={extremes?.humidity?.min.value} 
+                minTime={extremes?.humidity?.min.time} 
+                maxValue={extremes?.humidity?.max.value}
+                maxTime={extremes?.humidity?.max.time} 
+              />  
 
-  {/* Wind Direction */}
-  <WindCompass windSpeed={liveData?.wind_speed} windDirection={liveData?.wind_direction} />
+              {/* Wind Direction */}
+              <WindCompass 
+                windSpeed={liveData?.wind_speed} 
+                windDirection={liveData?.wind_direction} 
+              />
 
-  {/* Surface & Depth Metrics */}
-  <DepthTemperatureGauge 
-    tempValue={liveData?.depth_temp}
-    minValue={extremes?.depth_temp?.min.value} 
-    minTime={extremes?.depth_temp?.min.time} 
-    maxValue={extremes?.depth_temp?.max.value}
-    maxTime={extremes?.depth_temp?.max.time}/>
+              {/* Pressure Card */}
+              < PressureCard pressureValue={liveData?.pressure} />
 
-  <DepthHumidityGauge 
-    humidityValue={liveData?.depth_humidity} 
-    minValue={extremes?.depth_humidity?.min.value} 
-    minTime={extremes?.depth_humidity?.min.time} 
-    maxValue={extremes?.depth_humidity?.max.value}
-    maxTime={extremes?.depth_humidity?.max.time}
-  />
+              {/* Depth Temperature */}
+              <DepthTemperatureGauge 
+                tempValue={liveData?.depth_temp}
+                minValue={extremes?.depth_temp?.min.value} 
+                minTime={extremes?.depth_temp?.min.time} 
+                maxValue={extremes?.depth_temp?.max.value}
+                maxTime={extremes?.depth_temp?.max.time}
+              />
 
-  <SurfaceTemperatureGauge 
-    tempValue={liveData?.surface_temp}
-    minValue={extremes?.surface_temp?.min.value} 
-    minTime={extremes?.surface_temp?.min.time} 
-    maxValue={extremes?.surface_temp?.max.value}
-    maxTime={extremes?.surface_temp?.max.time}
-  />
+              {/* Depth Humidity */}
+              <DepthHumidityGauge 
+                humidityValue={liveData?.depth_humidity} 
+                minValue={extremes?.depth_humidity?.min.value} 
+                minTime={extremes?.depth_humidity?.min.time} 
+                maxValue={extremes?.depth_humidity?.max.value}
+                maxTime={extremes?.depth_humidity?.max.time}
+              />
 
-  <SurfaceHumidityGauge 
-    humidityValue={liveData?.surface_humidity} 
-    minValue={extremes?.surface_humidity?.min.value} 
-    minTime={extremes?.surface_humidity?.min.time} 
-    maxValue={extremes?.surface_humidity?.max.value}
-    maxTime={extremes?.surface_humidity?.max.time}
-     />
-</div>
+              {/* Surface Temperature */}
+              <SurfaceTemperatureGauge 
+                tempValue={liveData?.surface_temp}
+                minValue={extremes?.surface_temp?.min.value} 
+                minTime={extremes?.surface_temp?.min.time} 
+                maxValue={extremes?.surface_temp?.max.value}
+                maxTime={extremes?.surface_temp?.max.time}
+              />
+
+              {/* Surface Humidity */}
+              <SurfaceHumidityGauge 
+                humidityValue={liveData?.surface_humidity} 
+                minValue={extremes?.surface_humidity?.min.value} 
+                minTime={extremes?.surface_humidity?.min.time} 
+                maxValue={extremes?.surface_humidity?.max.value}
+                maxTime={extremes?.surface_humidity?.max.time}
+              />
+
+            </div>
 
           </>
         )}  

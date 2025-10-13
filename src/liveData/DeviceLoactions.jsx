@@ -52,6 +52,7 @@ export default function DeviceLocation({ selectedDevice }) {
           scrollWheelZoom={false}
           className="mt-3 rounded"
           style={{ height: "160px", width: "100%", zIndex: 1}}
+          dragging={false}
         >
           <TileLayer
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'

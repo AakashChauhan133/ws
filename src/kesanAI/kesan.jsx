@@ -79,7 +79,7 @@ const KisanChatbot = () => {
         setIsLoading(true);
 
         try {
-            const response = await axios.post('http://127.0.0.1:5000/ask', {
+            const response = await axios.post('https://kesanai.onrender.com/ask', {
                 question: (question + `Device ID: ${selectedDevice}`)
             });
             const aiMessage = { from: 'ai', text: response.data.answer };

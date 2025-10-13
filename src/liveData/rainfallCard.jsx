@@ -74,7 +74,7 @@ const RainfallCard = ({ rainfallValue }) => {
             {details.state === 'heavy' && <><RainEffect count={150} heavy={true} /><ThunderstormEffect /></>}
 
             <div className="relative z-10">
-                <h3 className={`text-lg font-semibold ${details.textColor} opacity-80 mb-4`}>Rainfall</h3>
+                <h3 className={`text-xl font-bold ${details.textColor} opacity-80 mb-9 mt-0`}>Rainfall</h3>
                 <p className={`text-7xl font-black ${details.textColor}`} style={{textShadow: '0 2px 4px rgba(0,0,0,0.2)'}}>
                     {displayValue}
                 </p>
