@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import "./styles.css";
 
 // --- Helper function to get UI details based on Lux value ---
 const getLuxDetails = (lux) => {

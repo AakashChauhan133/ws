@@ -133,7 +133,7 @@ const KisanChatbot = () => {
                     <div className="max-w-4xl mx-auto">
                         {messages.map((msg, index) => (
                             <div key={index} className={`flex items-start my-6 gap-3 ${msg.from === 'user' ? 'flex-row-reverse' : ''}`}>
-                                <div className={`p-4 rounded-2xl shadow-md max-w-[75%] ${msg.from === 'ai' ? 'bg-white text-gray-800' : 'bg-green-600 text-white'}`}>
+                                <div className={`p-4 rounded-2xl shadow-md whitespace-pre-wrap max-w-[75%] ${msg.from === 'ai' ? 'bg-white text-gray-800' : 'bg-green-600 text-white'}`}>
                                     {msg.text}
                                 </div>
                             </div>

@@ -1,0 +1,14 @@
+@keyframes sun-glow {
+    0%, 100% { box-shadow: 0 0 30px 5px rgba(252, 211, 77, 0.5); }
+    50% { box-shadow: 0 0 50px 15px rgba(252, 211, 77, 0.7); }
+}
+.sun-animation {
+    animation: sun-glow 6s infinite ease-in-out;
+}
+@keyframes moon-glow {
+    0%, 100% { box-shadow: 0 0 20px 3px rgba(224, 231, 255, 0.5); }
+    50% { box-shadow: 0 0 30px 8px rgba(224, 231, 255, 0.7); }
+}
+.moon-animation {
+    animation: moon-glow 8s infinite ease-in-out;
+}

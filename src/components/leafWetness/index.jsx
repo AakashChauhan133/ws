@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import "./styles.css";
 
 // --- Helper function to get details based on wetness hours ---
 const getWetnessDetails = (hours) => {

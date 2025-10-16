@@ -1,0 +1,15 @@
+/* Pressure Card */
+@keyframes arrow-rise {
+    0%, 100% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(-4px); opacity: 0.5; }
+}
+@keyframes arrow-fall {
+    0%, 100% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(4px); opacity: 0.5; }
+}
+.animate-arrow-rise {
+    animation: arrow-rise 1.5s ease-in-out infinite;
+}
+.animate-arrow-fall {
+    animation: arrow-fall 1.5s ease-in-out infinite;
+}

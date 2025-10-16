@@ -1,4 +1,5 @@
 import React from 'react';
+import "./styles.css";
 
 // --- Helper function to get details based on pressure (hPa) ---
 const getPressureDetails = (hpa, trend) => {

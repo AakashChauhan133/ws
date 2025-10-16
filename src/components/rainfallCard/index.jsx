@@ -1,4 +1,5 @@
 import React from 'react';
+import "./styles.css";
 
 // --- Helper function to get details based on rainfall value (mm) ---
 const getRainDetails = (mm) => {
