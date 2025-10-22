@@ -48,7 +48,7 @@ const WindCompass = ({ windSpeed, windDirection }) => {
                 {/* Speed Display */}
                 <div className='py-8'>
                     <span className="text-7xl font-black text-gray-800">
-                        {Math.round(speed)}
+                        {speed}
                     </span>
                     <span className="text-2xl font-semibold text-gray-500 ml-2">
                         m/s
