@@ -18,6 +18,7 @@ import Logout from "./Logout";
 import { AuthProvider } from "./AuthProvider";
 import WeeklyOverview from "./WeeklyOverview";
 import User from "./User";
+import KisanChatbot from "./kesanAI/kesan";
 
 function Layout() {
   const location = useLocation();
@@ -47,6 +48,7 @@ function Layout() {
           <div className="">
             <Routes>
               <Route path="/livedata" element={<LiveData />} />
+              <Route path="/kisan" element={< KisanChatbot />} />
               <Route path="/export" element={<Export />} />
               <Route path="/weekly" element={<WeeklyOverview />} />
               <Route path="/user" element={<User />} />

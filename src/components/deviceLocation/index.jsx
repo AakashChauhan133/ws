@@ -39,8 +39,8 @@ export default function DeviceLocation({ selectedDevice }) {
   }, [selectedDevice]);
 
   return (
-    <div className="border p-4 rounded-lg shadow hover:shadow-lg">
-      <h2 className="text-lg font-semibold mb-2 text-green-700">Device Location</h2>
+    <div className="border p-4 rounded-lg shadow-md transition duration-300 ease-in-out hover:shadow-lg">
+      <h2 className="text-xl mb-2 text-green-700 font-bold">Device Location</h2>
       <p><strong>Latitude:</strong> {latitude}</p>
       <p><strong>Longitude:</strong> {longitude}</p>
       <p><strong>Address:</strong> {address}</p>
@@ -52,6 +52,7 @@ export default function DeviceLocation({ selectedDevice }) {
           scrollWheelZoom={false}
           className="mt-3 rounded"
           style={{ height: "160px", width: "100%", zIndex: 1}}
+          dragging={false}
         >
           <TileLayer
             attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a>'

@@ -11,6 +11,7 @@ import {
   Skull,
   Leaf,
   Droplet,
+  Bot,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import logo from "./image.png";
@@ -21,6 +22,7 @@ export default function Sidebar() {
 
   const navItems = [
     { label: "Live Data", icon: <BarChart3 size={18} />, to: "/livedata" },
+    { label: "KeSAN", icon: <Bot size={18} />, to: "/kisan" },
     { label: "Overview", icon: <CalendarDays size={18} />, to: "/weekly" },
     { label: "Export", icon: <Download size={18} />, to: "/export" },
     { label: "Fungus", icon: <Skull size={18} />, to: "/fungus" },

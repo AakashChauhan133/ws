@@ -1,0 +1,11 @@
+/* Leaf Wetness */
+@keyframes drip {
+    0% { transform: translateY(0); opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(20px); opacity: 0; }
+}
+.droplet {
+    position: absolute;
+    animation: drip 3s infinite ease-in-out;
+}

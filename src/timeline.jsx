@@ -30,15 +30,11 @@ const WeatherTimeline = ({ weatherData }) => {
   };
 
   return (
-    <div className="w-full lg:w-1/2 md:p-10">
+    <div className="w-full lg:w-1/3 md:p-5">
       <div className="relative wrap px-4">
         {/* --- Timeline Items (Mapping over weather data) --- */}
         {weatherData.map((item, index) => (
           <div key={item.id || index} className="mb-8 flex items-center w-full">
-            {/* Dot */}
-            <div className="z-10 flex items-center order-1 bg-green-700 shadow-xl w-10 h-10 rounded-full">
-              <div className="w-5 h-5 m-auto rounded-full bg-white"></div>
-            </div>
             
             {/* Content Card (Responsive) */}
             <div className="order-1 bg-green-800 rounded-lg shadow-xl ml-4 px-6 py-4 flex-1">

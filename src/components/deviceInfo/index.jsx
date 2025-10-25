@@ -1,16 +1,17 @@
 import React from 'react';
+import "./styles.css";
 
 // --- Time-Based Background Component ---
 const TimeBasedBackground = ({ hour }) => {
     let skyGradient, SunMoon;
 
-    if (hour >= 5 && hour < 12) { // Morning
+    if (hour >= 5 && hour < 11) { // Morning
         skyGradient = 'from-sky-300 to-blue-500';
         SunMoon = () => <div className="sun-animation absolute top-1/2 left-1/4 w-16 h-16 bg-amber-200 rounded-full transition-all duration-1000"></div>;
-    } else if (hour >= 12 && hour < 17) { // Noon
+    } else if (hour >= 11 && hour < 16) { // Noon
         skyGradient = 'from-sky-400 to-blue-600';
         SunMoon = () => <div className="sun-animation absolute top-8 left-1/2 -translate-x-1/2 w-20 h-20 bg-yellow-300 rounded-full transition-all duration-1000"></div>;
-    } else if (hour >= 17 && hour < 20) { // Evening
+    } else if (hour >= 16 && hour < 19) { // Evening
         skyGradient = 'from-orange-400 via-red-500 to-indigo-800';
         SunMoon = () => <div className="sun-animation absolute top-1/2 right-1/4 w-16 h-16 bg-orange-400 rounded-full transition-all duration-1000"></div>;
     } else { // Night
