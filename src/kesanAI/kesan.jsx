@@ -3,7 +3,6 @@ import axios from 'axios';
 import { Send } from 'lucide-react';
 import Sidebar from '../Sidebar';
 import { useAuth } from '../AuthProvider'; // Import useAuth to get device info
-import API_BASE_URL from '../config';   // Import your API base URL
 
 const KisanChatbot = () => {
     const [messages, setMessages] = useState([
@@ -11,44 +10,23 @@ const KisanChatbot = () => {
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [thinkingText, setThinkingText] = useState("Assessing foliage 🌿");
+    const [thinkingText, setThinkingText] = useState("Scanning orchard... 🌳");
     const messagesEndRef = useRef(null);
 
+    // --- NEW: State for device context ---
     const { devices, devicesLoading } = useAuth();
     const [selectedDevice, setSelectedDevice] = useState(null);
-    const [weeklyData, setWeeklyData] = useState(null);
-    const [isContextLoading, setIsContextLoading] = useState(true); // NEW state for initial data load
+    const [isContextLoading, setIsContextLoading] = useState(true);
 
-    // Automatically select the first device
+    // --- NEW: Automatically select the first device ---
     useEffect(() => {
         if (!devicesLoading && devices.length > 0) {
             setSelectedDevice(devices[0]);
+            setIsContextLoading(false); // Context is loaded
+        } else if (!devicesLoading && devices.length === 0) {
+            setIsContextLoading(false); // No devices, but context is "loaded"
         }
     }, [devicesLoading, devices]);
-
-    // Fetch weekly data when the device changes
-    useEffect(() => {
-        if (!selectedDevice) return;
-
-        const fetchWeeklyData = async () => {
-            setIsContextLoading(true); // Start loading context
-            try {
-                const response = await axios.get(`${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=daily`, {
-                    withCredentials: true,
-                });
-                if (response.data.status && response.data.data.length > 0) {
-                    setWeeklyData(JSON.stringify(response.data.data));
-                }
-            } catch (error) {
-                console.error("Failed to fetch weekly data for chatbot context:", error);
-            } finally {
-                setIsContextLoading(false); // Finish loading context
-            }
-        };
-
-        fetchWeeklyData();
-    }, [selectedDevice]);
-
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -60,27 +38,40 @@ const KisanChatbot = () => {
     useEffect(() => {
         if (isLoading) {
             const phrases = [
-                "Scanning orchard 🌳","Gauging climate 🌡️","Reading the soil 🌱", "Checking the leaves 🍃","Consulting records 📈", "Assessing foliage 🌿"
+                "Gauging climate... 🌡️",
+                "Reading the soil... 🌱",
+                "Checking the leaves... 🍃",
+                "Consulting records... 📈",
+                "Assessing foliage... 🌿",
+                "Scanning orchard... 🌳"
             ];
             let index = 0;
             const interval = setInterval(() => {
                 index = (index + 1) % phrases.length;
                 setThinkingText(phrases[index]);
-            }, 1500);
-            return () => clearInterval(interval);
+            }, 1500); // Change text every 1.5 seconds
+
+            return () => clearInterval(interval); // Cleanup when isLoading becomes false
         }
     }, [isLoading]);
 
     const handleSend = async (question) => {
         if (!question.trim() || isContextLoading) return;
+        
+        if (!selectedDevice) {
+             setMessages(prev => [...prev, { from: 'ai', text: 'Please select a device first to get farm data.' }]);
+             return;
+        }
 
         const userMessage = { from: 'user', text: question };
         setMessages(prev => [...prev, userMessage]);
         setIsLoading(true);
 
         try {
+            // --- MODIFIED: Send both the question and the deviceId ---
             const response = await axios.post('https://kesanai.onrender.com/ask', {
-                question: (question + `Device ID: ${selectedDevice}`)
+                question: question,
+                deviceId: selectedDevice.d_id // Pass the selected device ID
             });
             const aiMessage = { from: 'ai', text: response.data.answer };
             setMessages(prev => [...prev, aiMessage]);
