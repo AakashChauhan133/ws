@@ -9,7 +9,6 @@ import {
   LogOut,
   Bug,
   Skull,
-  Leaf,
   Droplet,
   Bot,
 } from "lucide-react";

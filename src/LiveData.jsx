@@ -101,11 +101,13 @@ useEffect(() => {
   // Function to fetch the data
   const fetchLiveData = () => {
     setLiveDataLoading(true);
+    console.log(`${API_BASE_URL}/live-data/${selectedDevice.d_id}`);
     axios.get(`${API_BASE_URL}/live-data/${selectedDevice.d_id}`, {
       withCredentials: true
     })
     .then(res => {
       if (res.data.status) {
+        console.log(res.data.data[0]);
         setLiveData(res.data.data[0]);
       } else {
         console.error(res.data.message);
