@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Send } from 'lucide-react';
 import Sidebar from '../Sidebar';
 import { useAuth } from '../AuthProvider'; // Import useAuth to get device info
+import API_BASE_URL from '../config';   // Import your API base URL
 
 const KisanChatbot = () => {
     const [messages, setMessages] = useState([
@@ -11,14 +12,15 @@ const KisanChatbot = () => {
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [thinkingText, setThinkingText] = useState("Scanning orchard... 🌳");
+    const [conversationId, setConversationId] = useState(null); // For session tracking
     const messagesEndRef = useRef(null);
 
-    // --- NEW: State for device context ---
+    // --- State for device context ---
     const { devices, devicesLoading } = useAuth();
     const [selectedDevice, setSelectedDevice] = useState(null);
     const [isContextLoading, setIsContextLoading] = useState(true);
 
-    // --- NEW: Automatically select the first device ---
+    // --- Automatically select the first device ---
     useEffect(() => {
         if (!devicesLoading && devices.length > 0) {
             setSelectedDevice(devices[0]);
@@ -68,13 +70,21 @@ const KisanChatbot = () => {
         setIsLoading(true);
 
         try {
-            // --- MODIFIED: Send both the question and the deviceId ---
-            const response = await axios.post('https://kesanai.onrender.com/ask', {
-                question: question,
-                deviceId: selectedDevice.d_id // Pass the selected device ID
+            // --- UPDATED to use the correct API endpoint and payload from your FastAPI app ---
+            const API_URL = 'https://kesan.onrender.com/api/chat';
+            
+            const response = await axios.post(API_URL, {
+                message: question,
+                device_id: selectedDevice.d_id,
+                conversation_id: conversationId
             });
-            const aiMessage = { from: 'ai', text: response.data.answer };
-            setMessages(prev => [...prev, aiMessage]);
+
+            // --- UPDATED to use the correct response field from your FastAPI app ---
+            const { response: responseData, conversation_id } = response.data;
+            setConversationId(conversation_id); 
+
+            setMessages(prev => [...prev, { from: 'ai', text: responseData }]);
+
         } catch (error) {
             console.error("Error fetching response from chatbot API:", error);
             const errorMessage = { from: 'ai', text: 'Sorry, I am having trouble connecting to my brain. Please try again later.' };
@@ -94,7 +104,7 @@ const KisanChatbot = () => {
         <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-500 mb-3 text-center">Quick Questions</h3>
             <div className="flex flex-wrap justify-center gap-3">
-                {['What is the current temperature?', 'Is it raining?', 'Give me a full weather report.'].map((q, i) => (
+                {['What is the best time for watering my apple plants?', 'Are there any disease risks I should be worried about? ', 'Can you recommend organic fertilizers for apple trees? ', 'Where should I sell my Apples in Himachal Pardesh?', 'मेरे खेत में अभी मौसम कैसा है?', 'क्या आज मुझे अपने बगीचे में पानी देना चाहिए?', 'क्या मुझे किसी बीमारी की चिंता करनी चाहिए ?', 'कौन सा कीटनाशक सेब के बगीचे के लिए सुरक्षित है?'].map((q, i) => (
                     <button 
                         key={i}
                         onClick={() => handleSend(q)}
@@ -119,8 +129,9 @@ const KisanChatbot = () => {
                 <div className=" md:hidden">
                     <Sidebar />
                 </div>
+
                 {/* Chat History */}
-                <div className="flex-1 pt-0 p-6 overflow-y-auto">
+                <div className="flex-1 pt-6 p-6 overflow-y-auto">
                     <div className="max-w-4xl mx-auto">
                         {messages.map((msg, index) => (
                             <div key={index} className={`flex items-start my-6 gap-3 ${msg.from === 'user' ? 'flex-row-reverse' : ''}`}>
@@ -132,7 +143,7 @@ const KisanChatbot = () => {
                         {isLoading && (
                             <div className="flex items-start my-6 gap-3">
                                 <div className="bg-white text-gray-500 p-4 rounded-2xl shadow-md">
-                                    <span>{thinkingText}</span>
+                                    <span className="transition-opacity duration-500 animate-pulse">{thinkingText}</span>
                                 </div>
                             </div>
                         )}
@@ -149,14 +160,14 @@ const KisanChatbot = () => {
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder="Ask about your farm..."
+                                placeholder={isContextLoading ? "Initializing Kisan AI..." : "Ask about your farm..."}
                                 className="flex-1 px-4 bg-transparent focus:outline-none"
-                                disabled={isLoading}
+                                disabled={isLoading || isContextLoading}
                             />
                             <button
                                 type="submit"
                                 className="bg-green-600 text-white p-3 rounded-full hover:bg-green-700 disabled:bg-gray-400 transition-colors"
-                                disabled={isLoading || !input.trim()}
+                                disabled={isLoading || isContextLoading || !input.trim()}
                             >
                                 <Send className="h-5 w-5" />
                             </button>
@@ -169,4 +180,3 @@ const KisanChatbot = () => {
 };
 
 export default KisanChatbot;
-
