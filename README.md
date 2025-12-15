@@ -1,3 +1,22 @@
+# About project
+# GridSphere – Weather Monitoring Station Dashboard
+GridSphere is a web-based dashboard for monitoring real-time agricultural
+and environmental data collected from smart weather stations deployed
+in fields. It helps farmers and researchers make data-driven decisions
+about irrigation, crop protection, and yield optimization.
+
+## Project Structure
+
+src/
+├── components/     # Reusable UI components
+├── pages/          # Route-level pages
+├── layouts/        # Layout components (Navbar, Sidebar)
+├── context/        # Global state (Auth, App state)
+├── services/       # API calls and external integrations
+├── utils/          # Helper functions
+└── App.js          # App entry + routing
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
