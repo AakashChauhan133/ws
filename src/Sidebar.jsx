@@ -20,16 +20,17 @@ export default function Sidebar() {
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   const navItems = [
-    { label: "Live Data", icon: <BarChart3 size={18} />, to: "/livedata" },
-    { label: "KeSAN", icon: <Bot size={18} />, to: "/kisan" },
-    { label: "Overview", icon: <CalendarDays size={18} />, to: "/weekly" },
-    { label: "Export", icon: <Download size={18} />, to: "/export" },
-    { label: "Fungus", icon: <Skull size={18} />, to: "/fungus" },
-    { label: "Pest", icon: <Bug size={18} />, to: "/pest" },
-    { label: "Spray Timing", icon: <Droplet size={18} />, to: "/spray" }, 
-    { label: "User Details", icon: <User2 size={18} />, to: "/user" },
-    { label: "Logout", icon: <LogOut size={18} />, to: "/logout" },
+    { label: "Live Data", to: "/livedata" },
+    { label: "KeSAN", to: "/kisan" },
+    { label: "Overview", to: "/weekly" },
+    { label: "Export", to: "/export" },
+    { label: "Fungus", to: "/fungus" },
+    { label: "Pest", to: "/pest" },
+    { label: "Spray Timing", to: "/spray" },
+    { label: "User Details", to: "/user" },
+    { label: "Logout", to: "/logout" },
   ];
+  
 
   return (
     <>

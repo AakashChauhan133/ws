@@ -1,100 +1,110 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import {  useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+
 import { getCSRFToken } from "./GetCSRF";
 import API_BASE_URL from "./config";
-import axios from "axios";
 import { useAuth } from "./AuthProvider";
 
 export default function LoginForm({ onBack }) {
-  const {setAuthenticated} = useAuth();
+  
+  const navigate = useNavigate();
 
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [redirect, setRedirect] = useState(false);
-  const navigate = useNavigate();
 
-   const handleForgotPassword = () => {
-        setRedirect(true);
-        setTimeout(() => {setRedirect(false); navigate("/forgotpassword");}, 500);
-        
-   }
+  const handleForgotPassword = () => {
+    setRedirect(true);
+    setTimeout(() => {
+      setRedirect(false);
+      navigate("forgotpassword"); // basename-safe
+    }, 500);
+  };
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
+    // 🔥 HARD RESET — prevents stale UI
+    setError("");
+    setSuccess(false);
+    setLoading(true);
 
-const handleLogin = async (e) => {
-  e.preventDefault();
-  setError("");
-  setSuccess(false);
+    if (!userId || !password) {
+      setError("Please enter both User ID and Password.");
+      setLoading(false);
+      return;
+    }
 
-  if (!userId || !password) {
-    setError("Please enter both User ID and Password.");
-    return;
-  }
+    try {
+      // 1️⃣ Get CSRF token
+      const csrf = await getCSRFToken();
 
-  setLoading(true);
-
-  try {
-      // 1. Get CSRF token from server
-      const csrfResponse = await getCSRFToken();
-      const csrf = csrfResponse; // { name: 'csrf_token_name', value: 'token_value' }
-      // console.log(csrf);
-      // 2. Prepare login data (URL-encoded format)
+      // 2️⃣ Prepare form data
       const formData = new URLSearchParams();
       formData.append("username", userId);
       formData.append("password", password);
-      formData.append(csrf.name, csrf.value); // CSRF token field
+      formData.append(csrf.name, csrf.value);
 
-      // 3. Send login POST request
-      const loginResponse = await axios.post(
+      // 3️⃣ Login request
+      const res = await axios.post(
         `${API_BASE_URL}/login`,
         formData,
         {
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
           },
-          withCredentials: true, // send session cookie
+          withCredentials: true,
         }
       );
 
-      const result = loginResponse.data;
+      const result = res.data;
 
-      if (loginResponse.status === 200 && result.status) {
+      // ✅ SUCCESS — EXIT IMMEDIATELY
+      if (res.status === 200 && result?.status) {
+        setError(""); // force clear
         setSuccess(true);
-        setAuthenticated(true);
-        setTimeout(() => {          
-          navigate("/livedata");
-        }, 1000);
-        // setSuccess(true);
-        // navigate("/livedata");
-        // Optionally store user info or redirect
-      } else {
-        setError(result.message || "Login failed.");
+        
+
+        setTimeout(() => {
+          navigate("livedata"); // relative path (basename safe)
+        }, 800);
+
+        return; // 🔥 CRITICAL
       }
+
+      // ❌ AUTH FAILURE
+      setError(result?.message || "Login failed.");
+
     } catch (err) {
       console.error("Login error:", err);
-      setError("An error occurred during login.");
+      setError(
+        err?.response?.data?.message ||
+        err.message ||
+        "An error occurred during login."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
-
-
 
   return (
     <div className="p-6 text-left w-full max-w-md mx-auto h-full flex flex-col justify-center">
       <h2 className="text-2xl font-bold mb-4 text-green-800">Login</h2>
 
+      {/* Messages */}
       {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
       {success && (
         <p className="text-green-600 text-sm mb-3">Login successful 🎉</p>
       )}
       {redirect && (
-        <p className="text-green-600 text-sm mb-3">Redirecting</p>
+        <p className="text-green-600 text-sm mb-3">Redirecting...</p>
       )}
 
       <form className="space-y-6" onSubmit={handleLogin}>
@@ -102,34 +112,26 @@ const handleLogin = async (e) => {
         <div className="relative">
           <input
             type="text"
-            id="userId"
             value={userId}
             onChange={(e) => setUserId(e.target.value)}
             className="w-full px-4 pt-5 pb-2 text-sm border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-400 peer bg-white text-black"
             placeholder=" "
           />
-          <label
-            htmlFor="userId"
-            className="absolute left-4 top-2 text-xs text-green-800 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400"
-          >
+          <label className="absolute left-4 top-2 text-xs text-green-800">
             User ID
           </label>
         </div>
 
-        {/* Password Field */}
+        {/* Password */}
         <div className="relative">
           <input
             type={showPass ? "text" : "password"}
-            id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 pt-5 pb-2 text-sm border border-green-300 rounded focus:outline-none focus:ring-2 focus:ring-green-400 peer bg-white text-black"
             placeholder=" "
           />
-          <label
-            htmlFor="password"
-            className="absolute left-4 top-2 text-xs text-green-800 transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400"
-          >
+          <label className="absolute left-4 top-2 text-xs text-green-800">
             Password
           </label>
           <span
@@ -151,7 +153,11 @@ const handleLogin = async (e) => {
         </button>
 
         <div className="flex justify-between text-sm mt-2">
-          <button type="button" className="text-green-700 hover:underline" onClick={handleForgotPassword}>
+          <button
+            type="button"
+            className="text-green-700 hover:underline"
+            onClick={handleForgotPassword}
+          >
             Forgot Password?
           </button>
           <button
