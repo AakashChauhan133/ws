@@ -1,7 +1,6 @@
 // src/AuthProvider.js
 import { createContext, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
 import API_BASE_URL from './config';
 
 const AuthContext = createContext();
@@ -9,12 +8,9 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [authenticated, setAuthenticated] = useState(null); // null = loading
   const [devices, setDevices] = useState([]);
-  const [devicesLoading, setDevicesLoading] = useState(true);
+  const [devicesLoading, setDevicesLoading] = useState(false);
   const [devicesError, setDevicesError] = useState('');
 
-  const navigate = useNavigate();
-
-  // 🔹 Fetch devices from API
   const fetchDevices = async () => {
     setDevicesLoading(true);
     try {
@@ -26,62 +22,53 @@ export const AuthProvider = ({ children }) => {
       if (res.data?.status) {
         setDevices(res.data.data || []);
       } else {
-        setDevicesError(res.data?.message || 'Failed to load devices');
         setDevices([]);
+        setDevicesError(res.data?.message || 'Failed to load devices');
       }
     } catch (err) {
-      setDevicesError(err?.response?.data?.message || err.message || 'Network error');
       setDevices([]);
+      setDevicesError(
+        err?.response?.data?.message || err.message || 'Network error'
+      );
     } finally {
       setDevicesLoading(false);
     }
   };
 
-  // 🔹 Check session on mount
+  // 🔹 Check auth ONCE
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/checkSession`, {
+        const res = await axios.get(`${API_BASE_URL}/checkSession`, {
           withCredentials: true,
         });
 
-        if (response.data.status) {
+        if (res.data?.status) {
           setAuthenticated(true);
-
-          // ✅ Immediately fetch fresh devices after auth
-          await fetchDevices();
-
-          navigate('/livedata', { replace: true });
-
-          // Refresh devices every 1 hour
-          const interval = setInterval(fetchDevices, 3600000);
-          return () => clearInterval(interval);
         } else {
           setAuthenticated(false);
-          navigate('/', { replace: true });
         }
-      } catch (err) {
+      } catch {
         setAuthenticated(false);
-        navigate('/', { replace: true });
       }
     };
 
     checkAuth();
   }, []);
 
-  // 🔹 If already authenticated, always fetch devices on mount
+  // 🔹 Fetch devices only after auth
   useEffect(() => {
-    if (authenticated) {
-      fetchDevices(); // ✅ ensures fresh devices every reload
-      const interval = setInterval(fetchDevices, 3600000);
-      return () => clearInterval(interval);
-    }
+    if (!authenticated) return;
+
+    fetchDevices();
+    const interval = setInterval(fetchDevices, 3600000);
+    return () => clearInterval(interval);
   }, [authenticated]);
 
   if (authenticated === null) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-900"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-900" />
       </div>
     );
   }
@@ -90,11 +77,10 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         authenticated,
-        setAuthenticated,
         devices,
         devicesLoading,
         devicesError,
-        refreshDevices: fetchDevices, // manual refresh option
+        refreshDevices: fetchDevices,
       }}
     >
       {children}
