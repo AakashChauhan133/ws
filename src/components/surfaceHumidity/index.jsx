@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 
 // --- Helper function to get status details based on humidity in % ---

@@ -73,7 +73,7 @@ export default function LoginForm({ onBack }) {
         
 
         setTimeout(() => {
-          navigate("livedata"); // relative path (basename safe)
+          navigate("/livedata"); // relative path (basename safe)
         }, 800);
 
         return; // 🔥 CRITICAL

@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 
 // --- Helper function to get theme details based on temperature ---

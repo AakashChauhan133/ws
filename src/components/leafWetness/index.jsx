@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo } from 'react';
 import "./styles.css";
 
@@ -36,11 +38,11 @@ const DropletEffect = ({ count = 10 }) => {
 
 // --- The Main Leaf Wetness Component ---
 const LeafWetnessCard = ({ wetnessHours }) => {
-    const hours = (wetnessHours || 0).toFixed(1);
+    const hours = (wetnessHours || 0);
     const details = getWetnessDetails(hours);
 
     return (
-        <div className={`w-full border-2 border-white bg-gradient-to-br ${details.bg} rounded-xl p-8 flex flex-col text-center h-full transition-all duration-500 shadow-md transition duration-300 ease-in-out hover:shadow-lg`}>
+        <div className={`w-full border-2 border-white bg-gradient-to-br ${details.bg} rounded-xl p-8 flex flex-col text-center h-full transition-all duration-500 shadow-md  ease-in-out hover:shadow-lg`}>
             <h3 className={`text-xl font-bold ${details.textColor}`}>Leaf Wetness</h3>
 
                 {/* Reading and Description */}

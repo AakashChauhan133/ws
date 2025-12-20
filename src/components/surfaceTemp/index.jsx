@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 
 // --- Simplified helper function to get status details based on temperature in °C ---

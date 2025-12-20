@@ -85,7 +85,6 @@ useEffect(() => {
   useEffect(() => {
     if (!devicesLoading && devices.length > 0 && !selectedDevice) {
       setSelectedDevice(devices[0]);
-      console.log(devices)
     }
   }, [devicesLoading, devices, selectedDevice]);
 
@@ -299,7 +298,7 @@ if (liveDataLoading) {
               />
 
               {/* Leaf Wetness */}
-              < LeafWetnessCard wetnessHours={0.6} />
+              < LeafWetnessCard wetnessHours={liveData?.leafwetness} />
 
               {/* Humidity Gauge */}
               <SimpleHumidityCard 
