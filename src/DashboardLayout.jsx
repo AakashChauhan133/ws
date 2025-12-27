@@ -1,13 +1,23 @@
-import Sidebar from "./Sidebar";
 import { Outlet } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import { useSidebar } from "./context/SidebarContext";
 
 export default function DashboardLayout() {
+  const { isOpen } = useSidebar();
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden bg-white">
+      {/* Sidebar */}
       <Sidebar />
-      <div className="flex-1 p-4">
+
+      {/* Content area */}
+      <main
+        className={`flex-1 transition-all duration-300 ease-in-out
+        ${isOpen ? "ml-72" : "ml-16"}
+        overflow-y-auto`}
+      >
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 }
