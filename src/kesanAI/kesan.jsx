@@ -71,7 +71,7 @@ const KisanChatbot = () => {
 
         try {
             // --- UPDATED to use the correct API endpoint and payload from your FastAPI app ---
-            const API_URL = 'https://kesan.onrender.com/api';
+            const API_URL = 'https://kesan.onrender.com/ap/chat';
             
             const response = await axios.post(API_URL, {
                 message: question,
