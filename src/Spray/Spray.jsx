@@ -55,7 +55,6 @@ export default function Spray() {
             description: `Humidity: ${forecast.main.humidity}% | Wind: ${forecast.wind.speed} m/s`,
           };
         });
-
         setWeatherData(processedData);
       } catch (e) {
         setError(e.message);
