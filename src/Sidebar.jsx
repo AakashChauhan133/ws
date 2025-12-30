@@ -8,8 +8,8 @@ import {
   SprayCan,
   User,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
+  Menu,
+  X
 } from "lucide-react";
 
 import { useSidebar } from "./context/SidebarContext";
@@ -50,11 +50,13 @@ export default function Sidebar() {
         {/* TOGGLE BUTTON */}
         <button
           onClick={toggleSidebar}
-          className="self-start bg-green-700 hover:bg-green-600
-          transition-all rounded p-2"
-          aria-label="Toggle Sidebar"
+          className="flex items-center justify-center
+          w-10 h-10
+          rounded-md
+          bg-green-700 hover:bg-green-600
+          transition-all duration-300"
         >
-          {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
