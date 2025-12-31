@@ -14,14 +14,13 @@ export default function useLiveDataPolling(deviceId) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // refs → no re-renders, safe across async calls
+  // refs → stable across renders
   const timeoutRef = useRef(null);
   const retryDelayRef = useRef(BASE_INTERVAL);
   const isMountedRef = useRef(false);
 
   /**
    * Core polling function
-   * Uses setTimeout (not setInterval)
    */
   const fetchLiveData = async () => {
     if (!deviceId || !isMountedRef.current) return;
@@ -37,7 +36,14 @@ export default function useLiveDataPolling(deviceId) {
 
       if (!isMountedRef.current) return;
 
-      const normalized = normalizeLiveData(response.data);
+      // 🔥 FIX #1 — extract the real live object
+      const live = response.data?.data?.[0];
+      if (!live) {
+        throw new Error("No live data received");
+      }
+
+      // 🔥 FIX #2 — correct normalization
+      const normalized = normalizeLiveData(live);
       setData(normalized);
 
       // reset backoff on success
@@ -45,7 +51,7 @@ export default function useLiveDataPolling(deviceId) {
     } catch (err) {
       if (!isMountedRef.current) return;
 
-      // Auth failure → STOP polling completely
+      // Auth failure → STOP polling
       if (err.response?.status === 401) {
         setError("Session expired");
         clearTimeout(timeoutRef.current);
@@ -60,8 +66,11 @@ export default function useLiveDataPolling(deviceId) {
         MAX_BACKOFF
       );
     } finally {
-      setLoading(false);
-      scheduleNextPoll();
+      // 🔥 FIX #3 — prevent zombie polling
+      if (isMountedRef.current) {
+        setLoading(false);
+        scheduleNextPoll();
+      }
     }
   };
 
@@ -72,7 +81,7 @@ export default function useLiveDataPolling(deviceId) {
     clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(() => {
-      // don’t poll hidden tabs
+      // pause polling when tab hidden
       if (document.visibilityState === "visible") {
         fetchLiveData();
       }
@@ -80,7 +89,7 @@ export default function useLiveDataPolling(deviceId) {
   };
 
   /**
-   * Handle tab visibility
+   * Handle tab visibility changes
    */
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -92,14 +101,12 @@ export default function useLiveDataPolling(deviceId) {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
+    return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
   }, []);
 
   /**
-   * Start / stop polling lifecycle
+   * Lifecycle start / stop
    */
   useEffect(() => {
     isMountedRef.current = true;
@@ -125,8 +132,8 @@ function normalizeLiveData(raw) {
   return {
     device: {
       id: raw.device_id,
-      status: raw.status,
-      lastSeen: raw.last_seen,
+      status: raw.device_status,
+      lastSeen: raw.timestamp,
       location: {
         latitude: raw.latitude,
         longitude: raw.longitude,
@@ -134,19 +141,20 @@ function normalizeLiveData(raw) {
       },
     },
     sensors: {
-      temperature: raw.temperature,
+      temperature: raw.temp,
       humidity: raw.humidity,
       rainfall: raw.rainfall,
       lightIntensity: raw.light_intensity,
       windSpeed: raw.wind_speed,
+      windDirection: raw.wind_direction,
       pressure: raw.pressure,
-      leafWetness: raw.leaf_wetness,
+      leafWetness: raw.leafwetness,
       depth: {
-        temperature: raw.depth_temperature,
+        temperature: raw.depth_temp,
         humidity: raw.depth_humidity,
       },
       surface: {
-        temperature: raw.surface_temperature,
+        temperature: raw.surface_temp,
         humidity: raw.surface_humidity,
       },
     },
