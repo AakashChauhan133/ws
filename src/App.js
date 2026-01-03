@@ -21,6 +21,8 @@ import Pest from "./Pest/Pest";
 import Spray from "./Spray/Spray";
 import User from "./User";
 
+import { SidebarProvider } from "./context/SidebarContext";
+
 function App() {
   return (
     <Router basename="/station">
@@ -36,7 +38,13 @@ function App() {
 
           {/* PROTECTED ROUTES */}
           <Route element={<ProtectedRoute />}>
-            <Route element={<DashboardLayout />}>
+            <Route
+              element={
+                <SidebarProvider>
+                  <DashboardLayout />
+                </SidebarProvider>
+              }
+            >
               <Route path="/livedata" element={<LiveData />} />
               <Route path="/kisan" element={<KisanChatbot />} />
               <Route path="/weekly" element={<WeeklyOverview />} />

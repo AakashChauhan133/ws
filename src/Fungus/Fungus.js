@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
-import GaugeChart from 'react-gauge-chart';
+import GaugeChart from "react-gauge-chart";
 
 // Helper function to process the raw sensor data
 function processSensorData(rawData) {
@@ -47,7 +47,6 @@ function processSensorData(rawData) {
     overallAvgHumidity: parseFloat(overallAvgHumidity.toFixed(2)),
   };
 }
-
 
 // ----------------------------
 // Condition Calculation Logic
@@ -166,8 +165,8 @@ export default function Fungus() {
 
   // This array will be merged with your SQL data.
   const leafWetnessFactors = [
-    0.15, 0.18, 0.22, 0.25, 0.28, 0.30, 0.33, 0.35, 0.38, 0.40, 0.43, 0.45, 0.48
-  ]; 
+    0.15, 0.18, 0.22, 0.25, 0.28, 0.3, 0.33, 0.35, 0.38, 0.4, 0.43, 0.45, 0.48,
+  ];
   // Select first device automatically
   useEffect(() => {
     if (!devicesLoading && devices.length > 0 && !selectedDevice) {
@@ -183,7 +182,6 @@ export default function Fungus() {
     const fetchDataAndProcess = async () => {
       setLoading(true);
       try {
-
         // --- 1. Robust Date Calculation --- RESOLVED tt
         // This method correctly handles month and year changes.
         const today = new Date();
@@ -192,12 +190,12 @@ export default function Fungus() {
         startDate.setDate(today.getDate() - 7); // Set start date to 7 days ago
 
         const formatDate = (date) => {
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, "0");
+          const month = String(date.getMonth() + 1).padStart(2, "0");
           const year = date.getFullYear();
           return `${day}-${month}-${year}`;
         };
-        
+
         const formattedStartDate = formatDate(startDate);
         const formattedEndDate = formatDate(endDate);
 
@@ -206,17 +204,16 @@ export default function Fungus() {
           `${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=custom&from=${formattedStartDate}&to=${formattedEndDate}`,
           { withCredentials: true }
         );
-        
+
         // Rename keys to match what processSensorData expects, if necessary
 
-        console.log("SQL Data: ",response.data.data);
+        console.log("SQL Data: ", response.data.data);
 
-        const sqlData = (response.data.data || []).map(item => ({
-            temperature_celcius: parseFloat(item.temp),
-            humidity_percentage: parseFloat(item.humidity)
-            //... map other fields if their names differ
+        const sqlData = (response.data.data || []).map((item) => ({
+          temperature_celcius: parseFloat(item.temp),
+          humidity_percentage: parseFloat(item.humidity),
+          //... map other fields if their names differ
         }));
-
 
         // --- STEP 2: Create a lookup map from the local JSON file ---
         const mergedData = sqlData.map((record, index) => ({
@@ -226,21 +223,62 @@ export default function Fungus() {
 
         // --- STEP 4: Process the complete, merged data ---
         const metrics = processSensorData(mergedData);
-        
+
         console.log("Calculated Metrics from Merged Data:", metrics);
 
         const calculatedData = [
-          { name: "Apple Scab", ...calculateAppleScab(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
-          { name: "Alternaria Blotch", ...calculateAlternaria(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
-          { name: "Marssonina Blotch", ...calculateMarssonina(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
-          { name: "Powdery Mildew", ...calculatePowderyMildew(metrics.avgTempDuringWetness, metrics.overallAvgHumidity)},
-          { name: "Cedar - Apple Rust", ...calculateCedarRust(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
-          { name: "Black Rot", ...calculateBlackRot(metrics.avgTempDuringWetness, metrics.totalWetnessHours)},
-          { name: "Bitter Rot", ...calculateBitterRot(metrics.avgTempDuringWetness, metrics.totalWetnessHours)}
+          {
+            name: "Apple Scab",
+            ...calculateAppleScab(
+              metrics.avgTempDuringWetness,
+              metrics.totalWetnessHours
+            ),
+          },
+          {
+            name: "Alternaria Blotch",
+            ...calculateAlternaria(
+              metrics.avgTempDuringWetness,
+              metrics.totalWetnessHours
+            ),
+          },
+          {
+            name: "Marssonina Blotch",
+            ...calculateMarssonina(
+              metrics.avgTempDuringWetness,
+              metrics.totalWetnessHours
+            ),
+          },
+          {
+            name: "Powdery Mildew",
+            ...calculatePowderyMildew(
+              metrics.avgTempDuringWetness,
+              metrics.overallAvgHumidity
+            ),
+          },
+          {
+            name: "Cedar - Apple Rust",
+            ...calculateCedarRust(
+              metrics.avgTempDuringWetness,
+              metrics.totalWetnessHours
+            ),
+          },
+          {
+            name: "Black Rot",
+            ...calculateBlackRot(
+              metrics.avgTempDuringWetness,
+              metrics.totalWetnessHours
+            ),
+          },
+          {
+            name: "Bitter Rot",
+            ...calculateBitterRot(
+              metrics.avgTempDuringWetness,
+              metrics.totalWetnessHours
+            ),
+          },
         ];
 
         setFungusData(calculatedData);
-
       } catch (err) {
         console.error("Failed to fetch or process sensor data:", err);
       } finally {
@@ -251,20 +289,10 @@ export default function Fungus() {
     fetchDataAndProcess();
   }, [selectedDevice]); // Re-runs when device changes
 
-
   return (
     <div className="flex h-screen overflow-hidden bg-white text-black">
-      {/* Sidebar */}
-      <div className="hidden md:block w-64 flex-shrink-0 bg-white border-r shadow">
-        <Sidebar />
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6">
-        <div className="-mx-6 -mt-6 md:hidden mb-4">
-          <Sidebar />
-        </div>
-
         <h1 className="text-3xl font-bold text-green-900">Fungus Detection</h1>
         <p className="mt-2 text-gray-700">
           Risk levels for common apple fungal infections (calculated from weekly
@@ -274,7 +302,9 @@ export default function Fungus() {
         {loading ? (
           <p className="mt-6 text-gray-500">Loading data...</p>
         ) : fungusData.length === 0 ? (
-          <p className="mt-6 text-gray-500">No data available for this device.</p>
+          <p className="mt-6 text-gray-500">
+            No data available for this device.
+          </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
             {fungusData.map((fungus, idx) => (
@@ -302,7 +332,11 @@ export default function Fungus() {
                     startAngle={180}
                     endAngle={0}
                   >
-                    <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                    <PolarAngleAxis
+                      type="number"
+                      domain={[0, 100]}
+                      tick={false}
+                    />
                     <RadialBar
                       dataKey="value"
                       cornerRadius={15}
@@ -321,12 +355,14 @@ export default function Fungus() {
                   <h3 className="text-lg font-semibold text-gray-800">
                     {fungus.name}
                   </h3>
-                  <p className={`mt-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(fungus.status)}`}>
+                  <p
+                    className={`mt-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                      fungus.status
+                    )}`}
+                  >
                     {fungus.status}
                   </p>
                 </div>
-
-                
               </div>
             ))}
           </div>

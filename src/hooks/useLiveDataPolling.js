@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config";
 
@@ -14,16 +14,29 @@ export default function useLiveDataPolling(deviceId) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // refs → no re-renders, safe across async calls
+  // refs → stable across renders
   const timeoutRef = useRef(null);
   const retryDelayRef = useRef(BASE_INTERVAL);
   const isMountedRef = useRef(false);
 
   /**
-   * Core polling function
-   * Uses setTimeout (not setInterval)
+   * Schedule next poll safely
    */
-  const fetchLiveData = async () => {
+  const scheduleNextPoll = useCallback((fetchFn) => {
+    clearTimeout(timeoutRef.current);
+
+    timeoutRef.current = setTimeout(() => {
+      // pause polling when tab hidden
+      if (document.visibilityState === "visible") {
+        fetchFn();
+      }
+    }, retryDelayRef.current);
+  }, []);
+
+  /**
+   * Core polling function - wrapped in useCallback to stabilize
+   */
+  const fetchLiveData = useCallback(async () => {
     if (!deviceId || !isMountedRef.current) return;
 
     try {
@@ -37,7 +50,14 @@ export default function useLiveDataPolling(deviceId) {
 
       if (!isMountedRef.current) return;
 
-      const normalized = normalizeLiveData(response.data);
+      // Extract the real live object
+      const live = response.data?.data?.[0];
+      if (!live) {
+        throw new Error("No live data received");
+      }
+
+      // Correct normalization
+      const normalized = normalizeLiveData(live);
       setData(normalized);
 
       // reset backoff on success
@@ -45,7 +65,9 @@ export default function useLiveDataPolling(deviceId) {
     } catch (err) {
       if (!isMountedRef.current) return;
 
-      // Auth failure → STOP polling completely
+      console.error("Live data fetch error:", err);
+
+      // Auth failure → STOP polling
       if (err.response?.status === 401) {
         setError("Session expired");
         clearTimeout(timeoutRef.current);
@@ -55,32 +77,18 @@ export default function useLiveDataPolling(deviceId) {
       setError("Failed to fetch live data");
 
       // exponential backoff
-      retryDelayRef.current = Math.min(
-        retryDelayRef.current * 2,
-        MAX_BACKOFF
-      );
+      retryDelayRef.current = Math.min(retryDelayRef.current * 2, MAX_BACKOFF);
     } finally {
-      setLoading(false);
-      scheduleNextPoll();
-    }
-  };
-
-  /**
-   * Schedule next poll safely
-   */
-  const scheduleNextPoll = () => {
-    clearTimeout(timeoutRef.current);
-
-    timeoutRef.current = setTimeout(() => {
-      // don’t poll hidden tabs
-      if (document.visibilityState === "visible") {
-        fetchLiveData();
+      // Prevent zombie polling
+      if (isMountedRef.current) {
+        setLoading(false);
+        scheduleNextPoll(fetchLiveData);
       }
-    }, retryDelayRef.current);
-  };
+    }
+  }, [deviceId, scheduleNextPoll]);
 
   /**
-   * Handle tab visibility
+   * Handle tab visibility changes
    */
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -92,14 +100,12 @@ export default function useLiveDataPolling(deviceId) {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
+    return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
+  }, [fetchLiveData]);
 
   /**
-   * Start / stop polling lifecycle
+   * Lifecycle start / stop
    */
   useEffect(() => {
     isMountedRef.current = true;
@@ -112,7 +118,7 @@ export default function useLiveDataPolling(deviceId) {
       isMountedRef.current = false;
       clearTimeout(timeoutRef.current);
     };
-  }, [deviceId]);
+  }, [deviceId, fetchLiveData]);
 
   return { data, loading, error };
 }
@@ -125,8 +131,8 @@ function normalizeLiveData(raw) {
   return {
     device: {
       id: raw.device_id,
-      status: raw.status,
-      lastSeen: raw.last_seen,
+      status: raw.device_status,
+      lastSeen: raw.timestamp,
       location: {
         latitude: raw.latitude,
         longitude: raw.longitude,
@@ -134,19 +140,20 @@ function normalizeLiveData(raw) {
       },
     },
     sensors: {
-      temperature: raw.temperature,
+      temperature: raw.temp,
       humidity: raw.humidity,
       rainfall: raw.rainfall,
       lightIntensity: raw.light_intensity,
       windSpeed: raw.wind_speed,
+      windDirection: raw.wind_direction,
       pressure: raw.pressure,
-      leafWetness: raw.leaf_wetness,
+      leafWetness: raw.leafwetness,
       depth: {
-        temperature: raw.depth_temperature,
+        temperature: raw.depth_temp,
         humidity: raw.depth_humidity,
       },
       surface: {
-        temperature: raw.surface_temperature,
+        temperature: raw.surface_temp,
         humidity: raw.surface_humidity,
       },
     },

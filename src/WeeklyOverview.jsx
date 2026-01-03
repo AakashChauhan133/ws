@@ -134,7 +134,7 @@ export default function WeeklyOverview() {
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-white text-black">
+    <div className="p-6">
       <div className="hidden md:block w-64 flex-shrink-0 bg-white border-r shadow">
         <Sidebar />
       </div>

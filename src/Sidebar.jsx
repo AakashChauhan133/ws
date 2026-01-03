@@ -1,87 +1,105 @@
-import React, { useState } from "react";
+import { NavLink } from "react-router-dom";
 import {
-  Menu,
-  X,
-  BarChart3,
-  CalendarDays,
-  User2,
+  LayoutDashboard,
+  Calendar,
   Download,
-  LogOut,
   Bug,
-  Skull,
-  Droplet,
-  Bot,
+  Leaf,
+  SprayCan,
+  User,
+  LogOut,
+  Menu,
+  X
 } from "lucide-react";
-import { Link } from "react-router-dom";
+
+import { useSidebar } from "./context/SidebarContext";
 import logo from "./image.png";
 
 export default function Sidebar() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const toggleMenu = () => setMenuOpen(!menuOpen);
+  const { isOpen, toggleSidebar } = useSidebar();
 
   const navItems = [
-    { label: "Live Data", to: "/livedata" },
-    { label: "KeSAN", to: "/kisan" },
-    { label: "Overview", to: "/weekly" },
-    { label: "Export", to: "/export" },
-    { label: "Fungus", to: "/fungus" },
-    { label: "Pest", to: "/pest" },
-    { label: "Spray Timing", to: "/spray" },
-    { label: "User Details", to: "/user" },
-    { label: "Logout", to: "/logout" },
+    { name: "Live Data", path: "/livedata", icon: LayoutDashboard },
+    { name: "Weekly", path: "/weekly", icon: Calendar },
+    { name: "Export", path: "/export", icon: Download },
+    { name: "Pest", path: "/pest", icon: Bug },
+    { name: "Fungus", path: "/fungus", icon: Leaf },
+    { name: "Spray", path: "/spray", icon: SprayCan },
+    { name: "User", path: "/user", icon: User },
   ];
-  
 
   return (
-    <>
-      {/* Mobile top bar */}
-      <div className="md:hidden flex items-center justify-between bg-green-900 text-white p-4 shadow-md">
-        <img src={logo} alt="Logo" className="h-10" />
-        <button onClick={toggleMenu} aria-label="Toggle menu">
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
+    <aside
+      className={`fixed top-0 left-0 h-screen bg-green-900 text-white
+      transition-all duration-300 ease-in-out
+      ${isOpen ? "w-72" : "w-16"}`}
+    >
+      {/* HEADER */}
+      <div className="flex flex-col gap-4 p-4 border-b border-green-800">
+        {/* LOGO — ONLY WHEN OPEN */}
+        {isOpen && (
+          <div className="flex items-center justify-center">
+            <img
+              src={logo}
+              alt="App Logo"
+              className="w-32 h-auto object-contain"
+            />
+          </div>
+        )}
+
+        {/* TOGGLE BUTTON */}
+        <button
+          onClick={toggleSidebar}
+          className="flex items-center justify-center
+          w-10 h-10
+          rounded-md
+          bg-green-700 hover:bg-green-600
+          transition-all duration-300"
+        >
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
-      {/* Sidebar */}
-      <div
-        className={`fixed top-0 left-0 h-full w-64 bg-green-900 text-white transform transition-transform duration-300 ease-in-out z-40 ${
-          menuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
-      >
-        <div className="p-4 flex items-center justify-between border-b border-green-800">
-          <img src={logo} alt="Logo" className="h-10" />
-          <button
-            className="md:hidden"
-            onClick={toggleMenu}
-            aria-label="Close menu"
+      {/* NAVIGATION */}
+      <nav className="mt-6 flex flex-col gap-2">
+        {navItems.map(({ name, path, icon: Icon }) => (
+          <NavLink
+            key={path}
+            to={path}
+            className={({ isActive }) =>
+              `relative flex items-center gap-4 px-5 py-4 text-base
+               transition-all duration-200
+               ${
+                 isActive
+                   ? "bg-green-800"
+                   : "hover:bg-green-800/60"
+               }`
+            }
           >
-            <X size={24} />
-          </button>
-        </div>
+            {/* ACTIVE SECTION BAR */}
+            {({ isActive }) =>
+              isActive && (
+                <span className="absolute left-0 top-0 h-full w-1 bg-lime-400" />
+              )
+            }
 
-        {/* Nav Links */}
-        <nav className="mt-6 space-y-2 px-4">
-          {navItems.map((item, idx) => (
-            <Link
-              key={idx}
-              to={item.to}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-green-800 transition"
-              onClick={() => setMenuOpen(false)}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
+            <Icon size={22} />
+            {isOpen && <span>{name}</span>}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* FOOTER */}
+      <div className="absolute bottom-0 w-full">
+        <NavLink
+          to="/logout"
+          className="flex items-center gap-4 px-5 py-4 text-base
+          hover:bg-red-600 transition"
+        >
+          <LogOut size={22} />
+          {isOpen && <span>Logout</span>}
+        </NavLink>
       </div>
-
-      {/* Backdrop when menu is open (mobile only) */}
-      {menuOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
-          onClick={toggleMenu}
-        />
-      )}
-    </>
+    </aside>
   );
 }
