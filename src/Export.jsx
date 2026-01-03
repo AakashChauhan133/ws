@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Sidebar from './Sidebar';
-import * as XLSX from "xlsx"; 
-import { useAuth } from './AuthProvider';
-import axios from 'axios';
-import API_BASE_URL from './config';
+import React, { useState, useRef, useEffect } from "react";
+import Sidebar from "./Sidebar";
+import * as XLSX from "xlsx";
+import { useAuth } from "./AuthProvider";
+import axios from "axios";
+import API_BASE_URL from "./config";
 
 const todayDate = new Date().toISOString().split("T")[0];
 
@@ -12,7 +12,7 @@ export default function Export() {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [showDevices, setShowDevices] = useState(false);
 
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState(todayDate);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
 
@@ -64,7 +64,6 @@ export default function Export() {
 
     const fetchTableData = async () => {
       try {
-
         // --- 1. Robust Date Calculation ---
         // This method correctly handles month and year changes.
         const today = new Date();
@@ -73,12 +72,12 @@ export default function Export() {
         startDate.setDate(today.getDate() - 7); // Set start date to 7 days ago
 
         const formatDate = (date) => {
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, "0");
+          const month = String(date.getMonth() + 1).padStart(2, "0");
           const year = date.getFullYear();
           return `${day}-${month}-${year}`;
         };
-        
+
         const formattedStartDate = formatDate(startDate);
         const formattedEndDate = formatDate(endDate);
 
@@ -87,7 +86,7 @@ export default function Export() {
           `${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=custom&from=${formattedStartDate}&to=${formattedEndDate}`,
           { withCredentials: true }
         );
-        
+
         const data = response.data.data || [];
 
         // Reversing the rows
@@ -139,18 +138,12 @@ export default function Export() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white text-black">
-      <div className="hidden md:block w-64 flex-shrink-0 bg-white border-r shadow">
-        <Sidebar />
-      </div>
-
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6">
-        <div className="-mx-6 -mt-6 md:hidden mb-4">
-          <Sidebar />
-        </div>
-
         {/* Header */}
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-green-800">Export Device Data</h1>
+          <h1 className="text-3xl font-bold text-green-800">
+            Export Device Data
+          </h1>
           <div className="relative">
             <button
               ref={buttonRef}
@@ -164,7 +157,9 @@ export default function Export() {
                 ref={dropdownRef}
                 className="absolute right-0 mt-2 bg-white border rounded-lg shadow-lg w-64 z-[1000]"
               >
-                <h2 className="text-lg font-semibold p-3 border-b">Select Device</h2>
+                <h2 className="text-lg font-semibold p-3 border-b">
+                  Select Device
+                </h2>
                 <ul className="max-h-[200px] overflow-y-auto">
                   {devices.map((device) => (
                     <li key={device.d_id}>
@@ -189,15 +184,23 @@ export default function Export() {
         {selectedDevice && (
           <div className="mt-8 bg-green-50 border-l-4 border-green-700 p-4 rounded shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h3 className="text-lg font-semibold text-green-800">{selectedDevice.d_id}</h3>
+              <h3 className="text-lg font-semibold text-green-800">
+                {selectedDevice.d_id}
+              </h3>
               <p className="text-sm text-gray-700">
-                Status: <span className="font-medium">{selectedDevice.device_status}</span>
+                Status:{" "}
+                <span className="font-medium">
+                  {selectedDevice.device_status}
+                </span>
               </p>
-              <p className="text-sm text-gray-700">Last Seen: {selectedDevice.last_seen}</p>
+              <p className="text-sm text-gray-700">
+                Last Seen: {selectedDevice.last_seen}
+              </p>
             </div>
             <div className="text-sm text-gray-700">
               <p>
-                Location: <span className="font-medium">{selectedDevice.address}</span>
+                Location:{" "}
+                <span className="font-medium">{selectedDevice.address}</span>
               </p>
               <p>
                 Lat: {selectedDevice.latitude} | Lng: {selectedDevice.longitude}
@@ -211,7 +214,10 @@ export default function Export() {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Start Date */}
             <div className="flex flex-col w-full md:w-1/3">
-              <label htmlFor="start-date" className="mb-2 font-semibold text-green-700">
+              <label
+                htmlFor="start-date"
+                className="mb-2 font-semibold text-green-700"
+              >
                 Start Date:
               </label>
               <input
@@ -225,7 +231,10 @@ export default function Export() {
 
             {/* End Date */}
             <div className="flex flex-col w-full md:w-1/3">
-              <label htmlFor="end-date" className="mb-2 font-semibold text-green-700 flex justify-between">
+              <label
+                htmlFor="end-date"
+                className="mb-2 font-semibold text-green-700 flex justify-between"
+              >
                 End Date:
                 <button
                   className="text-sm text-green-600 underline"
@@ -288,7 +297,9 @@ export default function Export() {
                         index % 2 === 0 ? "bg-green-50" : "bg-white"
                       } hover:bg-green-100 transition duration-150`}
                     >
-                      <td className="p-3">{new Date(row.timestamp).toLocaleString()}</td>
+                      <td className="p-3">
+                        {new Date(row.timestamp).toLocaleString()}
+                      </td>
                       <td className="p-3">{row.temp} °C</td>
                       <td className="p-3">{row.humidity} %</td>
                       <td className="p-3">{row.light_intensity} lx</td>
@@ -304,8 +315,9 @@ export default function Export() {
                           NE: "NORTH EAST",
                           NW: "NORTH WEST",
                           SE: "SOUTH EAST",
-                          SW: "SOUTH WEST"
-                        }[row.wind_direction] || row.wind_direction?.toUpperCase()}
+                          SW: "SOUTH WEST",
+                        }[row.wind_direction] ||
+                          row.wind_direction?.toUpperCase()}
                       </td>
 
                       <td className="p-3">{row.surface_temp} °C</td>
