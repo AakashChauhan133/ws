@@ -1,49 +1,23 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
-  ResponsiveContainer,
-} from "recharts";
 import GaugeChart from "react-gauge-chart";
-
 import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
 
-/* ---------- helper functions (UNCHANGED) ---------- */
+/* ---------- CONSTANT PEST LIST (THIS WAS MISSING) ---------- */
 
-function preprocessDailyTemperatures(rawData) {
-  if (!rawData || rawData.length === 0) return [];
+const PESTS = [
+  { key: "codling_moth", name: "Codling Moth" },
+  { key: "aphids", name: "Aphids" },
+  { key: "apple_maggot", name: "Apple Maggot" },
+  { key: "spider_mites", name: "Spider Mites" },
+  { key: "san_jose_scale", name: "San Jose Scale" },
+];
 
-  const dailyTemps = rawData.reduce((acc, record) => {
-    const date = new Date(record.timestamp).toLocaleDateString();
-    const temp = record.temperature_celcius;
+/* ---------- STATUS UTILS ---------- */
 
-    if (!acc[date]) acc[date] = { min: temp, max: temp };
-    else {
-      acc[date].min = Math.min(acc[date].min, temp);
-      acc[date].max = Math.max(acc[date].max, temp);
-    }
-    return acc;
-  }, {});
-
-  return Object.entries(dailyTemps).map(([date, temps]) => ({
-    date,
-    ...temps,
-  }));
-}
-
-function calculateDegreeDays(dailyTemps, min, max) {
-  return dailyTemps.reduce((total, day) => {
-    const avg = (day.min + day.max) / 2;
-    if (avg <= min) return total;
-    if (avg >= max) return total + (max - min);
-    return total + (avg - min);
-  }, 0);
-}
-
-/* ---------- risk models (UNCHANGED) ---------- */
+const getStatus = (value) =>
+  value >= 60 ? "High" : value >= 30 ? "Medium" : "Low";
 
 const getStatusColor = (status) =>
   status === "High"
@@ -74,42 +48,38 @@ export default function Pest() {
     const fetchAndCalculate = async () => {
       setLoading(true);
       try {
-        const today = new Date();
-        const start = new Date();
-        start.setDate(today.getDate() - 7);
-
-        const format = (d) =>
-          `${String(d.getDate()).padStart(2, "0")}-${String(
-            d.getMonth() + 1
-          ).padStart(2, "0")}-${d.getFullYear()}`;
-
         const res = await axios.get(
-          `${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=custom&from=${format(
-            start
-          )}&to=${format(today)}`,
+          `${API_BASE_URL}/live-data/${selectedDevice.d_id}`,
           { withCredentials: true }
         );
 
-        const raw = res.data.data || [];
-        if (!raw.length) {
+        const live = res.data?.data?.[0];
+        if (!live) {
           setPestData([]);
           return;
         }
 
-        const mapped = raw.map((r) => ({
-          timestamp: r.timestamp,
-          temperature_celcius: Number(r.temp),
-          humidity_percentage: Number(r.humidity),
-        }));
+        const temp = Number(live.temp) || 0;
+        const humidity = Number(live.humidity) || 0;
+        const leafWetness = Number(live.leafwetness) || 0;
 
-        const latest = mapped[mapped.length - 1];
-        const dailyTemps = preprocessDailyTemperatures(mapped);
+        /* SIMPLE, STABLE RISK HEURISTICS */
+        const risks = {
+          codling_moth: Math.min(Math.max((temp - 10) * 3, 0), 100),
+          aphids: Math.min(Math.max((humidity - 40) * 2, 0), 100),
+          apple_maggot: temp > 18 ? 40 : 0,
+          spider_mites: temp > 20 && humidity < 60 ? 35 : 10,
+          san_jose_scale: leafWetness > 5 ? 25 : 5,
+        };
 
-        const results = [
-          { name: "Codling Moth", value: 60, status: "Medium" },
-          { name: "Aphids", value: 40, status: "Low" },
-          { name: "Apple Maggot", value: 0, status: "Low" },
-        ];
+        const results = PESTS.map((p) => {
+          const value = Math.round(risks[p.key] || 0);
+          return {
+            name: p.name,
+            value,
+            status: getStatus(value),
+          };
+        });
 
         setPestData(results);
       } catch (e) {
@@ -124,14 +94,13 @@ export default function Pest() {
   }, [selectedDevice]);
 
   return (
-    /* ✅ PURE CONTENT CONTAINER */
     <div className="p-6 bg-white min-h-full overflow-y-auto">
       <h1 className="text-3xl font-bold text-green-900">
         Pest Risk Analysis
       </h1>
 
       <p className="mt-2 text-gray-700">
-        Risk levels for common apple pests based on recent weather data.
+        Risk levels for common apple pests based on live station data.
       </p>
 
       {loading ? (
@@ -145,20 +114,19 @@ export default function Pest() {
               key={idx}
               className="bg-white border rounded-2xl p-6 flex flex-col items-center shadow-sm"
             >
-              <ResponsiveContainer width={200} height={200}>
-                <GaugeChart
-                  percent={pest.value / 100}
-                  colors={["#22c55e", "#facc15", "#ef4444"]}
-                  arcWidth={0.3}
-                  hideText
-                />
-              </ResponsiveContainer>
+              <GaugeChart
+                percent={pest.value / 100}
+                colors={["#22c55e", "#facc15", "#ef4444"]}
+                arcWidth={0.3}
+                hideText
+              />
 
               <p className="text-3xl font-bold mt-[-20px]">
                 {pest.value}%
               </p>
 
               <h3 className="mt-2 font-semibold">{pest.name}</h3>
+
               <span
                 className={`mt-1 px-3 py-1 rounded-full text-sm ${getStatusColor(
                   pest.status

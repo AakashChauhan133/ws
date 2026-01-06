@@ -233,38 +233,92 @@ export default function Export() {
       </div>
 
       {/* Table */}
-      <div className="mt-12 overflow-x-auto">
-        <table className="min-w-[1000px] w-full text-sm border-collapse">
-          <thead className="bg-green-100 text-green-800">
-            <tr>
-              <th className="p-3 text-left">Timestamp</th>
-              <th className="p-3 text-left">Temp (°C)</th>
-              <th className="p-3 text-left">Humidity (%)</th>
-              <th className="p-3 text-left">Rainfall</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tableData.length ? (
-              tableData.map((row, i) => (
-                <tr key={i} className="border-b">
-                  <td className="p-3">
-                    {new Date(row.timestamp).toLocaleString()}
-                  </td>
-                  <td className="p-3">{row.temp}</td>
-                  <td className="p-3">{row.humidity}</td>
-                  <td className="p-3">{row.rainfall}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="p-4 text-gray-500">
-                  No data available
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* DATA TABLE (ONE WEEK STYLE) */}
+<div className="mt-10 overflow-x-auto border rounded-lg">
+  <table className="min-w-[1600px] w-full text-sm border-collapse">
+    <thead className="bg-green-100 text-green-900">
+      <tr>
+        <th className="p-3 text-left">Timestamp</th>
+        <th className="p-3 text-left">Temperature (°C)</th>
+        <th className="p-3 text-left">Humidity (%)</th>
+        <th className="p-3 text-left">Light Intensity (lx)</th>
+        <th className="p-3 text-left">Leaf Wetness (lwd)</th>
+        <th className="p-3 text-left">Rainfall (mm)</th>
+        <th className="p-3 text-left">Wind Speed (m/s)</th>
+        <th className="p-3 text-left">Wind Direction (°)</th>
+        <th className="p-3 text-left">Surface Temp (°C)</th>
+        <th className="p-3 text-left">Surface Humidity (%)</th>
+        <th className="p-3 text-left">Depth Temp (°C)</th>
+        <th className="p-3 text-left">Depth Humidity (%)</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {tableData.length ? (
+        tableData.map((row, i) => (
+          <tr
+            key={i}
+            className={i % 2 === 0 ? "bg-green-50" : "bg-white"}
+          >
+            <td className="p-3">
+              {new Date(row.timestamp).toLocaleString()}
+            </td>
+
+            <td className="p-3">
+              {Number(row.temp) || 0} °C
+            </td>
+
+            <td className="p-3">
+              {Number(row.humidity) || 0} %
+            </td>
+
+            <td className="p-3">
+              {Number(row.light_intensity) || 0} lx
+            </td>
+
+            <td className="p-3">
+              {Number(row.leafwetness) || 0}
+            </td>
+
+            <td className="p-3">
+              {Number(row.rainfall) || 0} mm
+            </td>
+
+            <td className="p-3">
+              {Number(row.wind_speed) || 0} m/s
+            </td>
+
+            <td className="p-3">
+              {Number(row.wind_direction) || 0}
+            </td>
+
+            <td className="p-3">
+              {Number(row.surface_temp) || 0} °C
+            </td>
+
+            <td className="p-3">
+              {Number(row.surface_humidity) || 0} %
+            </td>
+
+            <td className="p-3">
+              {Number(row.depth_temp) || 0} °C
+            </td>
+
+            <td className="p-3">
+              {Number(row.depth_humidity) || 0} %
+            </td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan={12} className="p-6 text-center text-gray-500">
+            No data available
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
     </div>
   );
 }

@@ -36,13 +36,13 @@ export default function useLiveDataPolling(deviceId) {
 
       if (!isMountedRef.current) return;
 
-      // 🔥 FIX #1 — extract the real live object
+      //  FIX #1 — extract the real live object
       const live = response.data?.data?.[0];
       if (!live) {
         throw new Error("No live data received");
       }
 
-      // 🔥 FIX #2 — correct normalization
+      //  FIX #2 — correct normalization
       const normalized = normalizeLiveData(live);
       setData(normalized);
 
@@ -66,7 +66,7 @@ export default function useLiveDataPolling(deviceId) {
         MAX_BACKOFF
       );
     } finally {
-      // 🔥 FIX #3 — prevent zombie polling
+      //  FIX #3 — prevent zombie polling
       if (isMountedRef.current) {
         setLoading(false);
         scheduleNextPoll();

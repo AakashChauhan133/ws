@@ -10,6 +10,7 @@ import { useAuth } from "./AuthProvider";
 export default function LoginForm({ onBack }) {
   
   const navigate = useNavigate();
+  const { setAuthenticated } = useAuth();
 
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +32,7 @@ export default function LoginForm({ onBack }) {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // 🔥 HARD RESET — prevents stale UI
+    //  HARD RESET — prevents stale UI
     setError("");
     setSuccess(false);
     setLoading(true);
@@ -65,21 +66,20 @@ export default function LoginForm({ onBack }) {
       );
 
       const result = res.data;
-
+    
       // ✅ SUCCESS — EXIT IMMEDIATELY
       if (res.status === 200 && result?.status) {
         setError(""); // force clear
         setSuccess(true);
         
-
+        setAuthenticated(true);
         setTimeout(() => {
-          navigate("/livedata"); // relative path (basename safe)
+          navigate("/livedata" ,{replace:true}); // relative path (basename safe)
         }, 800);
 
-        return; // 🔥 CRITICAL
+        return; 
       }
 
-      // ❌ AUTH FAILURE
       setError(result?.message || "Login failed.");
 
     } catch (err) {

@@ -9,7 +9,7 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
 } from "lucide-react";
 
 import { useSidebar } from "./context/SidebarContext";
@@ -35,19 +35,8 @@ export default function Sidebar() {
       ${isOpen ? "w-72" : "w-16"}`}
     >
       {/* HEADER */}
-      <div className="flex flex-col gap-4 p-4 border-b border-green-800">
-        {/* LOGO — ONLY WHEN OPEN */}
-        {isOpen && (
-          <div className="flex items-center justify-center">
-            <img
-              src={logo}
-              alt="App Logo"
-              className="w-32 h-auto object-contain"
-            />
-          </div>
-        )}
-
-        {/* TOGGLE BUTTON */}
+      <div className="flex items-center gap-3 p-4 border-b border-green-800">
+        {/* TOGGLE BUTTON — FIRST */}
         <button
           onClick={toggleSidebar}
           className="flex items-center justify-center
@@ -58,6 +47,15 @@ export default function Sidebar() {
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
+
+        {/* LOGO — ONLY WHEN OPEN */}
+        {isOpen && (
+          <img
+            src={logo}
+            alt="App Logo"
+            className="w-32 h-auto object-contain"
+          />
+        )}
       </div>
 
       {/* NAVIGATION */}
@@ -76,7 +74,6 @@ export default function Sidebar() {
                }`
             }
           >
-            {/* ACTIVE SECTION BAR */}
             {({ isActive }) =>
               isActive && (
                 <span className="absolute left-0 top-0 h-full w-1 bg-lime-400" />

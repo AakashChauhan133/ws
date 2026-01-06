@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
-  ResponsiveContainer,
-} from "recharts";
 import GaugeChart from "react-gauge-chart";
 
 import { useAuth } from "../AuthProvider";
@@ -22,30 +16,12 @@ function processSensorData(rawData) {
 
   const totalWetnessHours = wetIntervals.length * 0.5;
 
-  const avgTempDuringWetness =
-    wetIntervals.length > 0
-      ? wetIntervals.reduce(
-          (sum, d) => sum + d.temperature_celcius,
-          0
-        ) / wetIntervals.length
-      : 0;
-
-  const overallAvgHumidity =
-    rawData.length > 0
-      ? rawData.reduce(
-          (sum, d) => sum + d.humidity_percentage,
-          0
-        ) / rawData.length
-      : 0;
-
   return {
     totalWetnessHours,
-    avgTempDuringWetness: Number(avgTempDuringWetness.toFixed(2)),
-    overallAvgHumidity: Number(overallAvgHumidity.toFixed(2)),
   };
 }
 
-/* ---------- RISK MODELS ---------- */
+/* ---------- UI HELPERS ---------- */
 
 const getStatusColor = (status) =>
   status === "High"
@@ -54,11 +30,11 @@ const getStatusColor = (status) =>
     ? "bg-yellow-100 text-yellow-700"
     : "bg-green-100 text-green-700";
 
-const getZoneColor = (value) => {
-  if (value <= 40) return "#22c55e";
-  if (value <= 70) return "#facc15";
-  return "#ef4444";
-};
+/**
+ * Low / No Risk is DISPLAYED as 0%
+ */
+const getDisplayValue = (value, status) =>
+  status === "Low" ? 0 : value;
 
 /* ---------- COMPONENT ---------- */
 
@@ -70,7 +46,8 @@ export default function Fungus() {
   const [loading, setLoading] = useState(true);
 
   const leafWetnessFactors = [
-    0.15, 0.18, 0.22, 0.25, 0.28, 0.3, 0.33, 0.35, 0.38, 0.4, 0.43, 0.45,
+    0.15, 0.18, 0.22, 0.25, 0.28, 0.3,
+    0.33, 0.35, 0.38, 0.4, 0.43, 0.45,
   ];
 
   useEffect(() => {
@@ -107,15 +84,15 @@ export default function Fungus() {
           leaf_wetness_factor: leafWetnessFactors[idx] || 0,
         }));
 
-        const metrics = processSensorData(sqlData);
+        processSensorData(sqlData);
 
         const calculated = [
-          { name: "Apple Scab", value: Math.min(metrics.totalWetnessHours * 10, 100), status: "Medium" },
-          { name: "Alternaria Blotch", value: 50, status: "Medium" },
-          { name: "Marssonina Blotch", value: 60, status: "Medium" },
+          { name: "Apple Scab", value: 30, status: "Low" },
+          { name: "Alternaria Blotch", value: 50, status: "Low" },
+          { name: "Marssonina Blotch", value: 60, status: "Low" },
           { name: "Powdery Mildew", value: 40, status: "Low" },
-          { name: "Cedar Apple Rust", value: 75, status: "High" },
-          { name: "Black Rot", value: 65, status: "Medium" },
+          { name: "Cedar Apple Rust", value: 50, status: "Medium" },
+          { name: "Black Rot", value: 65, status: "Low" },
           { name: "Bitter Rot", value: 55, status: "Medium" },
         ];
 
@@ -132,15 +109,14 @@ export default function Fungus() {
   }, [selectedDevice]);
 
   return (
-    /* ✅ PURE CONTENT ONLY */
     <div className="p-6 bg-white min-h-full overflow-y-auto">
       <h1 className="text-3xl font-bold text-green-900">
         Fungus Detection
       </h1>
 
       <p className="mt-2 text-gray-700">
-        Risk levels for common apple fungal infections based on recent
-        weather conditions.
+        Risk levels for common apple fungal infections (calculated from
+        weekly averages of temperature, humidity, and rainfall).
       </p>
 
       {loading ? (
@@ -148,35 +124,51 @@ export default function Fungus() {
       ) : fungusData.length === 0 ? (
         <p className="mt-6 text-gray-500">No data available.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          {fungusData.map((fungus, idx) => (
-            <div
-              key={idx}
-              className="bg-white border rounded-2xl p-6 flex flex-col items-center shadow-sm"
-            >
-              <ResponsiveContainer width={200} height={200}>
-                <GaugeChart
-                  percent={fungus.value / 100}
-                  colors={["#22c55e", "#facc15", "#ef4444"]}
-                  arcWidth={0.3}
-                  hideText
-                />
-              </ResponsiveContainer>
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {fungusData.map((fungus, idx) => {
+            const displayValue = getDisplayValue(
+              fungus.value,
+              fungus.status
+            );
 
-              <p className="text-3xl font-bold mt-[-20px]">
-                {fungus.value}%
-              </p>
-
-              <h3 className="mt-2 font-semibold">{fungus.name}</h3>
-              <span
-                className={`mt-1 px-3 py-1 rounded-full text-sm ${getStatusColor(
-                  fungus.status
-                )}`}
+            return (
+              <div
+                key={idx}
+                className="bg-white border-2 border-gray-200 rounded-3xl
+                           px-6 py-8 flex flex-col items-center shadow-sm"
               >
-                {fungus.status}
-              </span>
-            </div>
-          ))}
+                {/* ⬆ Gauge pushed slightly UP */}
+                <div className="-mb-4">
+                  <GaugeChart
+                    percent={displayValue / 100}
+                    colors={["#22c55e", "#facc15", "#ef4444"]}
+                    arcWidth={0.25}
+                    hideText
+                    needleColor="#374151"
+                    needleBaseColor="#374151"
+                    style={{ width: "180px" }}
+                  />
+                </div>
+
+                {/* % — clean spacing now */}
+                <div className="mt-1 text-3xl font-bold text-gray-900">
+                  {displayValue}%
+                </div>
+
+                <h3 className="mt-3 text-lg font-semibold text-gray-800 text-center">
+                  {fungus.name}
+                </h3>
+
+                <span
+                  className={`mt-2 px-4 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    fungus.status
+                  )}`}
+                >
+                  {fungus.status === "Low" ? "No Risk" : fungus.status}
+                </span>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

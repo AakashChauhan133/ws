@@ -13,25 +13,31 @@ export default function Logout() {
   const [countdown, setCountdown] = useState(10);
   const navigate = useNavigate();
   const logoutUser = async () => {
-      try {
-        const csrf = await getCSRFToken();
-
-        const formData = new URLSearchParams();
-        formData.append(csrf.name, csrf.value);
-        await axios.post(`${API_BASE_URL}/logout`, formData,
-          {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          withCredentials: true, // send session cookie
-        }
-        );
-        setAuthenticated(false);
-        setStatus('success');
-      } catch (err) {
-        setStatus('error');
+    try {
+      const csrf = await getCSRFToken();
+  
+      const formData = new URLSearchParams();
+      formData.append(csrf.name, csrf.value);
+  
+      const res = await axios.post(
+        `${API_BASE_URL}/logout`,
+        formData,
+        { withCredentials: true }
+      );
+  
+      if (res.status !== 200) {
+        throw new Error("Logout failed");
       }
-    };
+  
+      // 🔥 IMPORTANT
+      setAuthenticated(false);
+  
+      setStatus('success');
+    } catch (err) {
+      console.error("Logout error:", err);
+      setStatus('error');
+    }
+  };
 
   useEffect(() => {
     logoutUser();
