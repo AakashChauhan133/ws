@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
 
 import { useAuth } from "./AuthProvider";
 import useLiveDataPolling from "./hooks/useLiveDataPolling";
@@ -16,16 +18,135 @@ import DepthTemperatureGauge from "./components/depthTemp";
 import DepthHumidityGauge from "./components/depthHumidity";
 import SurfaceTemperatureGauge from "./components/surfaceTemp";
 import SurfaceHumidityGauge from "./components/surfaceHumidity";
-import WindCompass from "./components/windCompass";
-import RainfallCard from "./components/rainfallCard";
 import DeviceInfoCard from "./components/deviceInfo";
-import SimpleHumidityCard from "./components//humidity";
 import Spinner from "./components/spinner";
-import PressureCard from "./components/pressure";
-import LeafWetnessCard from "./components/leafWetness";
+
+// Fix for leaflet marker icons in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png"),
+  iconUrl: require("leaflet/dist/images/marker-icon.png"),
+  shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
+});
 
 const now = new Date();
 const currentHour = now.getHours();
+
+// Device Location Component with map
+const DeviceLocation = ({ selectedDevice }) => {
+  const [locationData, setLocationData] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+
+  useEffect(() => {
+    if (!selectedDevice) return;
+
+    setLocationLoading(true);
+    setLocationError(null);
+
+    // Use selectedDevice directly if it already has location data
+    if (selectedDevice?.latitude && selectedDevice?.longitude) {
+      setLocationData(selectedDevice);
+      setLocationLoading(false);
+      return;
+    }
+
+    // Otherwise, try to fetch from API
+    axios
+      .get(`${API_BASE_URL}/devices/${selectedDevice.d_id}`, {
+        withCredentials: true,
+      })
+      .then((res) => {
+        if (res.data.status && res.data.data) {
+          setLocationData(res.data.data);
+        } else if (res.data.data) {
+          setLocationData(res.data.data);
+        } else {
+          setLocationError("Failed to fetch device location");
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching device location:", err);
+        setLocationError("Unable to fetch device location");
+      })
+      .finally(() => {
+        setLocationLoading(false);
+      });
+  }, [selectedDevice]);
+
+  if (locationLoading) {
+    return (
+      <div className="bg-white border rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-gray-800">Device Location</h3>
+        <p className="text-gray-600 mt-2">Loading location...</p>
+      </div>
+    );
+  }
+
+  if (locationError) {
+    return (
+      <div className="bg-white border rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-gray-800">Device Location</h3>
+        <p className="text-red-600 mt-2">{locationError}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border rounded-lg p-4">
+      <h3 className="text-lg font-semibold text-gray-800">Device Location</h3>
+      <div className="mt-4">
+        {locationData?.address || locationData?.location ? (
+          <div className="relative">
+            {(locationData?.latitude || locationData?.longitude) && (
+              <div
+                className="rounded-lg overflow-hidden border border-gray-200"
+                style={{ height: "200px" }}
+              >
+                <MapContainer
+                  center={[locationData.latitude, locationData.longitude]}
+                  zoom={13}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker
+                    position={[locationData.latitude, locationData.longitude]}
+                  >
+                    <Popup>
+                      <div>
+                        <p className="font-semibold">{locationData.d_id}</p>
+                        <p className="text-sm">
+                          {locationData.address || locationData.location}
+                        </p>
+                      </div>
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+            )}
+            {/* Text overlay on top of map */}
+            <div className="absolute top-4 left-4 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg p-3 shadow-lg max-w-xs z-[400]">
+              <p className="text-gray-700 font-semibold text-sm mb-2">
+                <strong>Address:</strong>{" "}
+                {locationData.address || locationData.location}
+              </p>
+              {(locationData?.latitude || locationData?.longitude) && (
+                <p className="text-xs text-gray-600">
+                  Coordinates: {locationData.latitude}, {locationData.longitude}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <p>Location not available</p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function LiveData() {
   const { devices, devicesLoading, devicesError } = useAuth();

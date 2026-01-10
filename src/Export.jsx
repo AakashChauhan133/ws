@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from "react";
-import Sidebar from "./Sidebar";
 import * as XLSX from "xlsx";
 import { useAuth } from "./AuthProvider";
 import axios from "axios";
@@ -56,8 +55,7 @@ export default function Export() {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
-    return () =>
-      document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showDevices]);
 
   /* 📊 Fetch weekly table data */
@@ -90,8 +88,6 @@ export default function Export() {
           )}&to=${format(today)}`,
           { withCredentials: true }
         );
-
-        const data = response.data.data || [];
 
         const data = response.data.data || [];
         setTableData(data.reverse());
@@ -127,10 +123,7 @@ export default function Export() {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Sensor Data");
 
-      XLSX.writeFile(
-        workbook,
-        `${selectedDevice?.d_id || "device"}_data.xlsx`
-      );
+      XLSX.writeFile(workbook, `${selectedDevice?.d_id || "device"}_data.xlsx`);
     } catch (err) {
       console.error("Export error:", err);
       alert("Failed to export data.");
@@ -254,88 +247,86 @@ export default function Export() {
                 max={todayDate}
               />
             </div>
+          </div>
 
-        <div>
-          <label className="font-semibold text-green-700">End Date</label>
-          <input
-            type="date"
-            className="w-full mt-2 border rounded px-3 py-2"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            max={todayDate}
-          />
-        </div>
+          {/* Export Button */}
+          <button
+            onClick={handleExport}
+            className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 font-semibold"
+          >
+            Export to Excel
+          </button>
 
-        {/* Table Section */}
-        <div className="mt-16 bg-white rounded-md shadow-sm">
-          <h3 className="text-xl font-semibold mb-4 border-b border-green-500 pb-2 text-green-800">
-            DATA TABLE (ONE WEEK)
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px] text-sm table-auto border-collapse">
-              <thead>
-                <tr className="bg-green-100 text-green-800 font-semibold border-y border-green-300">
-                  <th className="p-3 text-left">TIMESTAMP</th>
-                  <th className="p-3 text-left">TEMPERATURE (°C)</th>
-                  <th className="p-3 text-left">HUMIDITY (%)</th>
-                  <th className="p-3 text-left">LIGHT INTENSITY (lx)</th>
-                  <th className="p-3 text-left">Leafwetness (lwd)</th>
-                  <th className="p-3 text-left">RAINFALL (mm)</th>
-                  <th className="p-3 text-left">WIND SPEED (m/s)</th>
-                  <th className="p-3 text-left">WIND DIRECTION (°)</th>
-                  <th className="p-3 text-left">SURFACE TEMP (°C)</th>
-                  <th className="p-3 text-left">SURFACE HUMIDITY (%)</th>
-                  <th className="p-3 text-left">DEPTH TEMP (°C)</th>
-                  <th className="p-3 text-left">DEPTH HUMIDITY (%)</th>
-                </tr>
-              </thead>
-              <tbody className="text-green-900">
-                {tableData.length > 0 ? (
-                  tableData.map((row, index) => (
-                    <tr
-                      key={index}
-                      className={`border-b border-green-100 ${
-                        index % 2 === 0 ? "bg-green-50" : "bg-white"
-                      } hover:bg-green-100 transition duration-150`}
-                    >
-                      <td className="p-3">
-                        {new Date(row.timestamp).toLocaleString()}
-                      </td>
-                      <td className="p-3">{row.temp} °C</td>
-                      <td className="p-3">{row.humidity} %</td>
-                      <td className="p-3">{row.light_intensity} lx</td>
-                      <td className="p-3">{row.leafwetness}</td>
-                      <td className="p-3">{row.rainfall} mm</td>
-                      <td className="p-3">{row.wind_speed} m/s</td>
-                      <td className="p-3">
-                        {{
-                          N: "NORTH",
-                          S: "SOUTH",
-                          E: "EAST",
-                          W: "WEST",
-                          NE: "NORTH EAST",
-                          NW: "NORTH WEST",
-                          SE: "SOUTH EAST",
-                          SW: "SOUTH WEST",
-                        }[row.wind_direction] ||
-                          row.wind_direction?.toUpperCase()}
-                      </td>
-
-                      <td className="p-3">{row.surface_temp} °C</td>
-                      <td className="p-3">{row.surface_humidity} %</td>
-                      <td className="p-3">{row.depth_temp} °C</td>
-                      <td className="p-3">{row.depth_humidity} %</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={12} className="p-4 text-left text-gray-500">
-                      No data found for this device in the last week.
-                    </td>
+          {/* Table Section */}
+          <div className="mt-16 bg-white rounded-md shadow-sm">
+            <h3 className="text-xl font-semibold mb-4 border-b border-green-500 pb-2 text-green-800">
+              DATA TABLE (ONE WEEK)
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1000px] text-sm table-auto border-collapse">
+                <thead>
+                  <tr className="bg-green-100 text-green-800 font-semibold border-y border-green-300">
+                    <th className="p-3 text-left">TIMESTAMP</th>
+                    <th className="p-3 text-left">TEMPERATURE (°C)</th>
+                    <th className="p-3 text-left">HUMIDITY (%)</th>
+                    <th className="p-3 text-left">LIGHT INTENSITY (lx)</th>
+                    <th className="p-3 text-left">Leafwetness (lwd)</th>
+                    <th className="p-3 text-left">RAINFALL (mm)</th>
+                    <th className="p-3 text-left">WIND SPEED (m/s)</th>
+                    <th className="p-3 text-left">WIND DIRECTION (°)</th>
+                    <th className="p-3 text-left">SURFACE TEMP (°C)</th>
+                    <th className="p-3 text-left">SURFACE HUMIDITY (%)</th>
+                    <th className="p-3 text-left">DEPTH TEMP (°C)</th>
+                    <th className="p-3 text-left">DEPTH HUMIDITY (%)</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="text-green-900">
+                  {tableData.length > 0 ? (
+                    tableData.map((row, index) => (
+                      <tr
+                        key={index}
+                        className={`border-b border-green-100 ${
+                          index % 2 === 0 ? "bg-green-50" : "bg-white"
+                        } hover:bg-green-100 transition duration-150`}
+                      >
+                        <td className="p-3">
+                          {new Date(row.timestamp).toLocaleString()}
+                        </td>
+                        <td className="p-3">{row.temp} °C</td>
+                        <td className="p-3">{row.humidity} %</td>
+                        <td className="p-3">{row.light_intensity} lx</td>
+                        <td className="p-3">{row.leafwetness}</td>
+                        <td className="p-3">{row.rainfall} mm</td>
+                        <td className="p-3">{row.wind_speed} m/s</td>
+                        <td className="p-3">
+                          {{
+                            N: "NORTH",
+                            S: "SOUTH",
+                            E: "EAST",
+                            W: "WEST",
+                            NE: "NORTH EAST",
+                            NW: "NORTH WEST",
+                            SE: "SOUTH EAST",
+                            SW: "SOUTH WEST",
+                          }[row.wind_direction] ||
+                            row.wind_direction?.toUpperCase()}
+                        </td>
+                        <td className="p-3">{row.surface_temp} °C</td>
+                        <td className="p-3">{row.surface_humidity} %</td>
+                        <td className="p-3">{row.depth_temp} °C</td>
+                        <td className="p-3">{row.depth_humidity} %</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={12} className="p-4 text-left text-gray-500">
+                        No data found for this device in the last week.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

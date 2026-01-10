@@ -4,7 +4,6 @@ import GaugeChart from "react-gauge-chart";
 
 import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
-import GaugeChart from "react-gauge-chart";
 
 /* ---------- DATA PROCESSING ---------- */
 
@@ -17,8 +16,22 @@ function processSensorData(rawData) {
 
   const totalWetnessHours = wetIntervals.length * 0.5;
 
+  const avgTempDuringWetness =
+    wetIntervals.length > 0
+      ? wetIntervals.reduce((sum, d) => sum + (d.temperature_celcius || 0), 0) /
+        wetIntervals.length
+      : 0;
+
+  const overallAvgHumidity =
+    rawData.length > 0
+      ? rawData.reduce((sum, d) => sum + (d.humidity_percentage || 0), 0) /
+        rawData.length
+      : 0;
+
   return {
     totalWetnessHours,
+    avgTempDuringWetness,
+    overallAvgHumidity,
   };
 }
 
@@ -29,8 +42,7 @@ function processSensorData(rawData) {
 /**
  * Low / No Risk is DISPLAYED as 0%
  */
-const getDisplayValue = (value, status) =>
-  status === "Low" ? 0 : value;
+const getDisplayValue = (value, status) => (status === "Low" ? 0 : value);
 
 /* ---------- COMPONENT ---------- */
 
@@ -161,8 +173,106 @@ export default function Fungus() {
       }
     };
 
-    fetchDataAndProcess();
+    fetchAndProcess();
   }, [selectedDevice]); // Re-runs when device changes
+
+  /* ---------- CALCULATION FUNCTIONS ---------- */
+
+  const calculateAppleScab = (temp, wetness) => {
+    const riskValue = Math.min(
+      100,
+      Math.max(0, (wetness / 12) * 100 * (temp > 10 && temp < 24 ? 1.2 : 0.5))
+    );
+    return {
+      value: Math.round(riskValue),
+      status: riskValue < 40 ? "Low" : riskValue < 70 ? "Moderate" : "High",
+    };
+  };
+
+  const calculateAlternaria = (temp, wetness) => {
+    const riskValue = Math.min(
+      100,
+      Math.max(0, (wetness / 12) * 100 * (temp > 15 && temp < 28 ? 1.2 : 0.5))
+    );
+    return {
+      value: Math.round(riskValue),
+      status: riskValue < 40 ? "Low" : riskValue < 70 ? "Moderate" : "High",
+    };
+  };
+
+  const calculateMarssonina = (temp, wetness) => {
+    const riskValue = Math.min(
+      100,
+      Math.max(0, (wetness / 12) * 100 * (temp > 12 && temp < 26 ? 1.2 : 0.5))
+    );
+    return {
+      value: Math.round(riskValue),
+      status: riskValue < 40 ? "Low" : riskValue < 70 ? "Moderate" : "High",
+    };
+  };
+
+  const calculatePowderyMildew = (temp, humidity) => {
+    const riskValue = Math.min(
+      100,
+      Math.max(0, (humidity / 100) * 100 * (temp > 15 && temp < 27 ? 1.1 : 0.4))
+    );
+    return {
+      value: Math.round(riskValue),
+      status: riskValue < 40 ? "Low" : riskValue < 70 ? "Moderate" : "High",
+    };
+  };
+
+  const calculateCedarRust = (temp, wetness) => {
+    const riskValue = Math.min(
+      100,
+      Math.max(0, (wetness / 12) * 100 * (temp > 10 && temp < 25 ? 1.2 : 0.5))
+    );
+    return {
+      value: Math.round(riskValue),
+      status: riskValue < 40 ? "Low" : riskValue < 70 ? "Moderate" : "High",
+    };
+  };
+
+  const calculateBlackRot = (temp, wetness) => {
+    const riskValue = Math.min(
+      100,
+      Math.max(0, (wetness / 12) * 100 * (temp > 18 && temp < 30 ? 1.2 : 0.5))
+    );
+    return {
+      value: Math.round(riskValue),
+      status: riskValue < 40 ? "Low" : riskValue < 70 ? "Moderate" : "High",
+    };
+  };
+
+  const calculateBitterRot = (temp, wetness) => {
+    const riskValue = Math.min(
+      100,
+      Math.max(0, (wetness / 12) * 100 * (temp > 15 && temp < 30 ? 1.2 : 0.5))
+    );
+    return {
+      value: Math.round(riskValue),
+      status: riskValue < 40 ? "Low" : riskValue < 70 ? "Moderate" : "High",
+    };
+  };
+
+  const getZoneColor = (value) => {
+    if (value < 40) return "#22c55e";
+    if (value < 70) return "#facc15";
+    return "#ef4444";
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Low":
+        return "bg-green-100 text-green-800";
+      case "Moderate":
+        return "bg-yellow-100 text-yellow-800";
+      case "High":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-white text-black">
@@ -185,49 +295,26 @@ export default function Fungus() {
             {fungusData.map((fungus, idx) => (
               <div
                 key={idx}
-                className="bg-white border-2 border-gray-200 rounded-3xl
-                           px-6 py-8 flex flex-col items-center shadow-sm"
+                className="bg-white border-2 border-gray-200 rounded-3xl px-6 py-8 flex flex-col items-center shadow-sm relative"
               >
-                {/* ⬆ Gauge pushed slightly UP */}
-                <div className="-mb-4">
+                <div className="mb-4">
                   <GaugeChart
-                    percent={displayValue / 100}
+                    percent={fungus.value / 100}
                     colors={["#22c55e", "#facc15", "#ef4444"]}
                     arcWidth={0.3}
-                    hideText="true"
+                    hideText={true}
                     textColor="#1f2937"
                     innerRadius="70%"
                     outerRadius="100%"
-                    data={[
-                      {
-                        name: fungus.name,
-                        value: fungus.value,
-                        fill: getZoneColor(fungus.value),
-                      },
-                    ]}
                     startAngle={180}
                     endAngle={0}
-                  >
-                    <PolarAngleAxis
-                      type="number"
-                      domain={[0, 100]}
-                      tick={false}
-                    />
-                    <RadialBar
-                      dataKey="value"
-                      cornerRadius={15}
-                      background={{ fill: "#e5e7eb" }}
-                      clockWise
-                    />
-                  </GaugeChart>
-                </ResponsiveContainer>
+                  />
+                </div>
 
-                {/* Centered % */}
-                <div className="absolute top-1/2 transform text-center">
+                <div className="text-center">
                   <p className="text-2xl font-bold text-gray-900 pb-2">
                     {fungus.value}%
                   </p>
-                  {/* Info */}
                   <h3 className="text-lg font-semibold text-gray-800">
                     {fungus.name}
                   </h3>
