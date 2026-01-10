@@ -11,19 +11,17 @@ import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
 import GaugeChart from "react-gauge-chart";
 
-// ---------------------------------
-// --- PEST CALCULATION LOGIC ---
-// ---------------------------------
+const PESTS = [
+  { key: "codling_moth", name: "Codling Moth" },
+  { key: "aphids", name: "Aphids" },
+  { key: "apple_maggot", name: "Apple Maggot" },
+  { key: "spider_mites", name: "Spider Mites" },
+  { key: "san_jose_scale", name: "San Jose Scale" },
+];
 
-/**
- * Pre-processes raw sensor data to find the min/max temperature for each day.
- * This is conceptually similar to a pandas groupby().agg() operation.
- * @param {Array<Object>} rawData - The array of sensor readings.
- * @returns {Array<Object>} An array of objects, e.g., [{ date: '9/1/2025', min: 20, max: 35 }]
- */
+/* ---------- STATUS UTILS ---------- */
+
 function preprocessDailyTemperatures(rawData) {
-  if (!rawData || rawData.length === 0) return [];
-
   const dailyTemps = rawData.reduce((acc, record) => {
     // This function relies on a valid timestamp.
     const date = new Date(record.timestamp).toLocaleDateString();
@@ -194,6 +192,13 @@ function getSanJoseScaleRisk(degreeDays) {
   return risk;
 }
 
+// --- Utility for getting status from value ---
+const getStatus = (value) => {
+  if (value <= 40) return "Low";
+  if (value <= 70) return "Medium";
+  return "High";
+};
+
 // --- Utility for coloring the status badges ---
 const getStatusColor = (status) => {
   switch (status) {
@@ -214,13 +219,14 @@ const getZoneColor = (value) => {
 
 export default function Pest() {
   const { devices, devicesLoading } = useAuth();
+
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [pestData, setPestData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Select first device automatically
+  /* auto-select device */
   useEffect(() => {
-    if (!devicesLoading && devices.length > 0 && !selectedDevice) {
+    if (!devicesLoading && devices.length && !selectedDevice) {
       setSelectedDevice(devices[0]);
     }
   }, [devicesLoading, devices, selectedDevice]);
@@ -228,7 +234,7 @@ export default function Pest() {
   useEffect(() => {
     if (!selectedDevice) return;
 
-    const calculatePestRisks = async () => {
+    const fetchAndCalculate = async () => {
       setLoading(true);
       try {
         // --- 1. Robust Date Calculation ---
@@ -286,15 +292,15 @@ export default function Pest() {
         ];
 
         setPestData(calculatedData);
-      } catch (err) {
-        console.error("Failed to fetch or process pest data:", err);
-        setPestData([]); // Clear data on error
+      } catch (e) {
+        console.error(e);
+        setPestData([]);
       } finally {
         setLoading(false);
       }
     };
 
-    calculatePestRisks();
+    fetchAndCalculate();
   }, [selectedDevice]);
 
   return (
@@ -322,54 +328,30 @@ export default function Pest() {
                 className="relative bg-white border-4 rounded-2xl p-6 flex flex-col items-center hover:shadow-lg transition"
               >
                 {/* Gauge */}
-                <ResponsiveContainer width={200} height={200}>
+                <div className="mb-4">
                   <GaugeChart
                     percent={(pest.value ?? 0) / 100}
                     colors={["#22c55e", "#facc15", "#ef4444"]}
                     arcWidth={0.3}
-                    hideText="true"
+                    hideText={true}
                     textColor="#1f2937"
                     innerRadius="70%"
                     outerRadius="100%"
-                    data={[
-                      {
-                        name: pest.name,
-                        value: pest.value,
-                        fill: getZoneColor(pest.value),
-                      },
-                    ]}
                     startAngle={180}
                     endAngle={0}
-                  >
-                    <PolarAngleAxis
-                      type="number"
-                      domain={[0, 100]}
-                      tick={false}
-                    />
-                    <RadialBar
-                      dataKey="value"
-                      cornerRadius={15}
-                      background={{ fill: "#e5e7eb" }}
-                      clockWise
-                    />
-                  </GaugeChart>
-                </ResponsiveContainer>
-
-                {/* Centered % */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center mt-[-30px] pt-9">
-                  <p className="text-4xl font-bold text-gray-900">
-                    {pest.value}%
-                  </p>
-                  <p className="text-sm text-gray-600">Risk</p>
+                  />
                 </div>
 
                 {/* Info */}
-                <div className="text-center mt-[-30px]">
+                <div className="text-center">
+                  <p className="text-4xl font-bold text-gray-900 mb-1">
+                    {pest.value}%
+                  </p>
                   <h3 className="text-lg font-semibold text-gray-800">
                     {pest.name}
                   </h3>
                   <p
-                    className={`mt-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    className={`mt-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
                       pest.status
                     )}`}
                   >

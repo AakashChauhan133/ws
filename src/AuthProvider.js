@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         authenticated,
+        setAuthenticated,
         devices,
         devicesLoading,
         devicesError,
