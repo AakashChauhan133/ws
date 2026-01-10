@@ -327,10 +327,10 @@ export default function Fungus() {
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
