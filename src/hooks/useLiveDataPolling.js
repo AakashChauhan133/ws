@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import axios from "axios";
 import API_BASE_URL from "../config";
 
@@ -20,9 +20,23 @@ export default function useLiveDataPolling(deviceId) {
   const isMountedRef = useRef(false);
 
   /**
-   * Core polling function
+   * Schedule next poll safely
    */
-  const fetchLiveData = async () => {
+  const scheduleNextPoll = useCallback((fetchFn) => {
+    clearTimeout(timeoutRef.current);
+
+    timeoutRef.current = setTimeout(() => {
+      // pause polling when tab hidden
+      if (document.visibilityState === "visible") {
+        fetchFn();
+      }
+    }, retryDelayRef.current);
+  }, []);
+
+  /**
+   * Core polling function - wrapped in useCallback to stabilize
+   */
+  const fetchLiveData = useCallback(async () => {
     if (!deviceId || !isMountedRef.current) return;
 
     try {
@@ -36,13 +50,13 @@ export default function useLiveDataPolling(deviceId) {
 
       if (!isMountedRef.current) return;
 
-      //  FIX #1 — extract the real live object
+      // Extract the real live object
       const live = response.data?.data?.[0];
       if (!live) {
         throw new Error("No live data received");
       }
 
-      //  FIX #2 — correct normalization
+      // Correct normalization
       const normalized = normalizeLiveData(live);
       setData(normalized);
 
@@ -50,6 +64,8 @@ export default function useLiveDataPolling(deviceId) {
       retryDelayRef.current = BASE_INTERVAL;
     } catch (err) {
       if (!isMountedRef.current) return;
+
+      console.error("Live data fetch error:", err);
 
       // Auth failure → STOP polling
       if (err.response?.status === 401) {
@@ -61,32 +77,15 @@ export default function useLiveDataPolling(deviceId) {
       setError("Failed to fetch live data");
 
       // exponential backoff
-      retryDelayRef.current = Math.min(
-        retryDelayRef.current * 2,
-        MAX_BACKOFF
-      );
+      retryDelayRef.current = Math.min(retryDelayRef.current * 2, MAX_BACKOFF);
     } finally {
-      //  FIX #3 — prevent zombie polling
+      // Prevent zombie polling
       if (isMountedRef.current) {
         setLoading(false);
-        scheduleNextPoll();
+        scheduleNextPoll(fetchLiveData);
       }
     }
-  };
-
-  /**
-   * Schedule next poll safely
-   */
-  const scheduleNextPoll = () => {
-    clearTimeout(timeoutRef.current);
-
-    timeoutRef.current = setTimeout(() => {
-      // pause polling when tab hidden
-      if (document.visibilityState === "visible") {
-        fetchLiveData();
-      }
-    }, retryDelayRef.current);
-  };
+  }, [deviceId, scheduleNextPoll]);
 
   /**
    * Handle tab visibility changes
@@ -103,7 +102,7 @@ export default function useLiveDataPolling(deviceId) {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
+  }, [fetchLiveData]);
 
   /**
    * Lifecycle start / stop
@@ -119,7 +118,7 @@ export default function useLiveDataPolling(deviceId) {
       isMountedRef.current = false;
       clearTimeout(timeoutRef.current);
     };
-  }, [deviceId]);
+  }, [deviceId, fetchLiveData]);
 
   return { data, loading, error };
 }
