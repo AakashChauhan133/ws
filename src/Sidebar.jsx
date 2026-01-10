@@ -58,6 +58,15 @@ export default function Sidebar() {
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
+
+        {/* LOGO — ONLY WHEN OPEN */}
+        {isOpen && (
+          <img
+            src={logo}
+            alt="App Logo"
+            className="w-32 h-auto object-contain"
+          />
+        )}
       </div>
 
       {/* NAVIGATION */}

@@ -1,50 +1,24 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "../Sidebar";
 import axios from "axios";
-import {
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
-  ResponsiveContainer,
-} from "recharts";
+import GaugeChart from "react-gauge-chart";
+
 import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
 import GaugeChart from "react-gauge-chart";
 
-// Helper function to process the raw sensor data
-function processSensorData(rawData) {
-  const WETNESS_THRESHOLD = 0.3; // Leaf is considered "wet" if factor > 0.3
+/* ---------- DATA PROCESSING ---------- */
 
-  // 1. Filter for time intervals where leaves were wet
+function processSensorData(rawData) {
+  const WETNESS_THRESHOLD = 0.3;
+
   const wetIntervals = rawData.filter(
     (d) => d.leaf_wetness_factor > WETNESS_THRESHOLD
   );
 
-  // 2. Calculate total hours of wetness
-  // Each interval is 0.5 hours (30 minutes)
   const totalWetnessHours = wetIntervals.length * 0.5;
 
-  // 3. Calculate the average temperature ONLY during the wet periods
-  const sumOfWetTemperatures = wetIntervals.reduce(
-    (sum, interval) => sum + interval.temperature_celcius,
-    0
-  );
-  const avgTempDuringWetness =
-    wetIntervals.length > 0 ? sumOfWetTemperatures / wetIntervals.length : 0;
-
-  // 4. Calculate the average humidity over the entire day for Powdery Mildew
-  const sumOfHumidity = rawData.reduce(
-    (sum, interval) => sum + interval.humidity_percentage,
-    0
-  );
-  const overallAvgHumidity =
-    rawData.length > 0 ? sumOfHumidity / rawData.length : 0;
-
-  // 5. Return the calculated metrics
   return {
     totalWetnessHours,
-    avgTempDuringWetness: parseFloat(avgTempDuringWetness.toFixed(2)), // Round to 2 decimal places
-    overallAvgHumidity: parseFloat(overallAvgHumidity.toFixed(2)),
   };
 }
 
@@ -52,134 +26,35 @@ function processSensorData(rawData) {
 // Condition Calculation Logic
 // ----------------------------
 
-// Apple Scab (Mills Table)
-function calculateAppleScab(temp, wetnessHours) {
-  if (temp < 6) return { value: 0, status: "No Risk" };
+/**
+ * Low / No Risk is DISPLAYED as 0%
+ */
+const getDisplayValue = (value, status) =>
+  status === "Low" ? 0 : value;
 
-  let requiredHours;
-  if (temp >= 18 && temp <= 24) requiredHours = 9;
-  else if (temp === 17) requiredHours = 10;
-  else if (temp === 16) requiredHours = 11;
-  else if (temp === 15) requiredHours = 12;
-  else if (temp >= 13 && temp <= 14) requiredHours = 14;
-  else if (temp === 12) requiredHours = 15;
-  else if (temp >= 10 && temp <= 11) requiredHours = 20;
+/* ---------- COMPONENT ---------- */
 
-  if (!requiredHours) return { value: 0, status: "No Risk" };
-
-  const risk = Math.min((wetnessHours / requiredHours) * 100, 100);
-  let status = "Low";
-  if (risk >= 70) status = "High";
-  else if (risk >= 40) status = "Medium";
-
-  return { value: Math.round(risk), status };
-}
-
-// Alternaria Blotch
-function calculateAlternaria(temp, wetnessHours) {
-  if (temp >= 25 && temp <= 30 && wetnessHours >= 5.5)
-    return { value: 80, status: "High" };
-  if (temp >= 20 && temp <= 32 && wetnessHours >= 4)
-    return { value: 50, status: "Medium" };
-  return { value: 0, status: "No Risk" };
-}
-
-// Marssonina Blotch
-function calculateMarssonina(temp, wetnessHours) {
-  if (temp >= 20 && temp <= 25 && wetnessHours >= 24)
-    return { value: 90, status: "High" };
-  if (temp >= 16 && temp <= 28 && wetnessHours >= 10)
-    return { value: 60, status: "Medium" };
-  return { value: 0, status: "No Risk" };
-}
-
-// Powdery Mildew
-function calculatePowderyMildew(temp, humidity) {
-  if (temp < 10 || temp > 25 || humidity < 70)
-    return { value: 0, status: "No Risk" };
-
-  const optimal = temp >= 19 && temp <= 22 && humidity > 75;
-  const risk = optimal ? 90 : 60;
-
-  return { value: risk, status: risk >= 70 ? "High" : "Medium" };
-}
-
-// Cedar - Apple Rust
-function calculateCedarRust(temp, wetnessHours) {
-  if (temp >= 13 && temp <= 24 && wetnessHours >= 4)
-    return { value: 75, status: "High" };
-  if (temp >= 10 && temp <= 26 && wetnessHours >= 2)
-    return { value: 50, status: "Medium" };
-  return { value: 0, status: "No Risk" };
-}
-
-// Black Rot
-function calculateBlackRot(temp, wetnessHours) {
-  if (temp < 20 || temp > 35 || wetnessHours < 4)
-    return { value: 0, status: "No Risk" };
-
-  const optimal = temp >= 26 && temp <= 32 && wetnessHours >= 6;
-  const risk = optimal ? 85 : 60;
-
-  return { value: risk, status: risk >= 70 ? "High" : "Medium" };
-}
-
-// Bitter Rot
-function calculateBitterRot(temp, wetnessHours) {
-  if (temp >= 26 && temp <= 32 && wetnessHours >= 5)
-    return { value: 80, status: "High" };
-  if (temp >= 20 && temp <= 35 && wetnessHours >= 3)
-    return { value: 50, status: "Medium" };
-  return { value: 0, status: "No Risk" };
-}
-
-// --- Utility for coloring the status badges ---
-const getStatusColor = (status) => {
-  switch (status) {
-    case "High":
-      return "bg-red-100 text-red-700";
-    case "Medium":
-      return "bg-yellow-100 text-yellow-700";
-    default:
-      return "bg-green-100 text-green-700";
-  }
-};
-
-// ----------------------------
-// Utility: Zone Color
-// ----------------------------
-const getZoneColor = (value) => {
-  if (value <= 40) return "#22c55e"; // green
-  if (value <= 70) return "#facc15"; // yellow
-  return "#ef4444"; // red
-};
-
-// ----------------------------
-// Main Fungus Component
-// ----------------------------
 export default function Fungus() {
   const { devices, devicesLoading } = useAuth();
+
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [fungusData, setFungusData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // This array will be merged with your SQL data.
   const leafWetnessFactors = [
     0.15, 0.18, 0.22, 0.25, 0.28, 0.3, 0.33, 0.35, 0.38, 0.4, 0.43, 0.45, 0.48,
   ];
   // Select first device automatically
   useEffect(() => {
-    if (!devicesLoading && devices.length > 0 && !selectedDevice) {
+    if (!devicesLoading && devices.length && !selectedDevice) {
       setSelectedDevice(devices[0]);
     }
   }, [devicesLoading, devices, selectedDevice]);
 
-  // Fetch weekly data when device changes
   useEffect(() => {
-    // Don't run if no device is selected
     if (!selectedDevice) return;
 
-    const fetchDataAndProcess = async () => {
+    const fetchAndProcess = async () => {
       setLoading(true);
       try {
         // --- 1. Robust Date Calculation --- RESOLVED tt
@@ -310,12 +185,13 @@ export default function Fungus() {
             {fungusData.map((fungus, idx) => (
               <div
                 key={idx}
-                className="relative bg-white border-4 rounded-2xl p-6 flex flex-col items-center hover:shadow-lg transition"
+                className="bg-white border-2 border-gray-200 rounded-3xl
+                           px-6 py-8 flex flex-col items-center shadow-sm"
               >
-                {/* Gauge */}
-                <ResponsiveContainer width={200} height={200}>
+                {/* ⬆ Gauge pushed slightly UP */}
+                <div className="-mb-4">
                   <GaugeChart
-                    percent={(fungus.value ?? 0) / 100}
+                    percent={displayValue / 100}
                     colors={["#22c55e", "#facc15", "#ef4444"]}
                     arcWidth={0.3}
                     hideText="true"
@@ -364,10 +240,10 @@ export default function Fungus() {
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,18 +9,19 @@ const todayDate = new Date().toISOString().split("T")[0];
 
 export default function Export() {
   const { devices, devicesLoading, devicesError } = useAuth();
+
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [showDevices, setShowDevices] = useState(false);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState(todayDate);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
+  const [tableData, setTableData] = useState([]);
 
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
-  const [tableData, setTableData] = useState([]);
 
-  // Timer for loading seconds
+  /* ⏱ Loading timer */
   useEffect(() => {
     let interval;
     if (devicesLoading) {
@@ -32,14 +33,14 @@ export default function Export() {
     return () => clearInterval(interval);
   }, [devicesLoading]);
 
-  // Select first device automatically
+  /* 🔌 Auto select first device */
   useEffect(() => {
     if (!devicesLoading && devices.length > 0 && !selectedDevice) {
       setSelectedDevice(devices[0]);
     }
   }, [devicesLoading, devices, selectedDevice]);
 
-  // Close dropdown on outside click
+  /* 🖱 Close dropdown on outside click */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -50,15 +51,16 @@ export default function Export() {
         setShowDevices(false);
       }
     };
+
     if (showDevices) {
       document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    return () =>
+      document.removeEventListener("mousedown", handleClickOutside);
   }, [showDevices]);
 
-  // Fetch table data (weekly by default)
+  /* 📊 Fetch weekly table data */
   useEffect(() => {
     if (!selectedDevice) return;
 
@@ -83,18 +85,16 @@ export default function Export() {
 
         // --- 2. Fetch Data from SQL API ---
         const response = await axios.get(
-          `${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=custom&from=${formattedStartDate}&to=${formattedEndDate}`,
+          `${API_BASE_URL}/devices/${selectedDevice.d_id}/history?range=custom&from=${format(
+            start
+          )}&to=${format(today)}`,
           { withCredentials: true }
         );
 
         const data = response.data.data || [];
 
-        // Reversing the rows
-        data.reverse();
-
-        // console.log(data);  debugging
-
-        setTableData(data);
+        const data = response.data.data || [];
+        setTableData(data.reverse());
       } catch (err) {
         console.error("Failed to fetch table data:", err);
         setTableData([]);
@@ -104,7 +104,7 @@ export default function Export() {
     fetchTableData();
   }, [selectedDevice]);
 
-  // Export handler
+  /* ⬇️ Export handler */
   const handleExport = async () => {
     if (!startDate || !endDate) {
       alert("Please select both start and end dates.");
@@ -118,20 +118,21 @@ export default function Export() {
       );
 
       const data = response.data.data || [];
-
       if (!data.length) {
-        alert("No records found for the selected date range.");
+        alert("No records found.");
         return;
       }
 
-      // Convert to Excel
       const worksheet = XLSX.utils.json_to_sheet(data);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Sensor Data");
 
-      XLSX.writeFile(workbook, `${selectedDevice?.d_id || "device"}_data.xlsx`);
-    } catch (error) {
-      console.error("Export error:", error);
+      XLSX.writeFile(
+        workbook,
+        `${selectedDevice?.d_id || "device"}_data.xlsx`
+      );
+    } catch (err) {
+      console.error("Export error:", err);
       alert("Failed to export data.");
     }
   };
@@ -179,6 +180,7 @@ export default function Export() {
             )}
           </div>
         </div>
+      </div>
 
         {/* Selected Device Card */}
         {selectedDevice && (
@@ -253,16 +255,15 @@ export default function Export() {
               />
             </div>
 
-            {/* Export Button */}
-            <div className="flex items-end w-full md:w-1/3">
-              <button
-                className="w-full bg-green-600 text-white py-3 rounded hover:bg-green-700 transition"
-                onClick={handleExport}
-              >
-                Export From Date to Date
-              </button>
-            </div>
-          </div>
+        <div>
+          <label className="font-semibold text-green-700">End Date</label>
+          <input
+            type="date"
+            className="w-full mt-2 border rounded px-3 py-2"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            max={todayDate}
+          />
         </div>
 
         {/* Table Section */}
@@ -338,6 +339,94 @@ export default function Export() {
           </div>
         </div>
       </div>
+
+      {/* Table */}
+      {/* DATA TABLE (ONE WEEK STYLE) */}
+<div className="mt-10 overflow-x-auto border rounded-lg">
+  <table className="min-w-[1600px] w-full text-sm border-collapse">
+    <thead className="bg-green-100 text-green-900">
+      <tr>
+        <th className="p-3 text-left">Timestamp</th>
+        <th className="p-3 text-left">Temperature (°C)</th>
+        <th className="p-3 text-left">Humidity (%)</th>
+        <th className="p-3 text-left">Light Intensity (lx)</th>
+        <th className="p-3 text-left">Leaf Wetness (lwd)</th>
+        <th className="p-3 text-left">Rainfall (mm)</th>
+        <th className="p-3 text-left">Wind Speed (m/s)</th>
+        <th className="p-3 text-left">Wind Direction (°)</th>
+        <th className="p-3 text-left">Surface Temp (°C)</th>
+        <th className="p-3 text-left">Surface Humidity (%)</th>
+        <th className="p-3 text-left">Depth Temp (°C)</th>
+        <th className="p-3 text-left">Depth Humidity (%)</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {tableData.length ? (
+        tableData.map((row, i) => (
+          <tr
+            key={i}
+            className={i % 2 === 0 ? "bg-green-50" : "bg-white"}
+          >
+            <td className="p-3">
+              {new Date(row.timestamp).toLocaleString()}
+            </td>
+
+            <td className="p-3">
+              {Number(row.temp) || 0} °C
+            </td>
+
+            <td className="p-3">
+              {Number(row.humidity) || 0} %
+            </td>
+
+            <td className="p-3">
+              {Number(row.light_intensity) || 0} lx
+            </td>
+
+            <td className="p-3">
+              {Number(row.leafwetness) || 0}
+            </td>
+
+            <td className="p-3">
+              {Number(row.rainfall) || 0} mm
+            </td>
+
+            <td className="p-3">
+              {Number(row.wind_speed) || 0} m/s
+            </td>
+
+            <td className="p-3">
+              {Number(row.wind_direction) || 0}
+            </td>
+
+            <td className="p-3">
+              {Number(row.surface_temp) || 0} °C
+            </td>
+
+            <td className="p-3">
+              {Number(row.surface_humidity) || 0} %
+            </td>
+
+            <td className="p-3">
+              {Number(row.depth_temp) || 0} °C
+            </td>
+
+            <td className="p-3">
+              {Number(row.depth_humidity) || 0} %
+            </td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan={12} className="p-6 text-center text-gray-500">
+            No data available
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
     </div>
   );
 }

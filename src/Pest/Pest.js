@@ -11,18 +11,15 @@ import { useAuth } from "../AuthProvider";
 import API_BASE_URL from "../config";
 import GaugeChart from "react-gauge-chart";
 
-// ---------------------------------
-// --- PEST CALCULATION LOGIC ---
-// ---------------------------------
+const PESTS = [
+  { key: "codling_moth", name: "Codling Moth" },
+  { key: "aphids", name: "Aphids" },
+  { key: "apple_maggot", name: "Apple Maggot" },
+  { key: "spider_mites", name: "Spider Mites" },
+  { key: "san_jose_scale", name: "San Jose Scale" },
+];
 
-/**
- * Pre-processes raw sensor data to find the min/max temperature for each day.
- * This is conceptually similar to a pandas groupby().agg() operation.
- * @param {Array<Object>} rawData - The array of sensor readings.
- * @returns {Array<Object>} An array of objects, e.g., [{ date: '9/1/2025', min: 20, max: 35 }]
- */
-function preprocessDailyTemperatures(rawData) {
-  if (!rawData || rawData.length === 0) return [];
+/* ---------- STATUS UTILS ---------- */
 
   const dailyTemps = rawData.reduce((acc, record) => {
     // This function relies on a valid timestamp.
@@ -214,13 +211,14 @@ const getZoneColor = (value) => {
 
 export default function Pest() {
   const { devices, devicesLoading } = useAuth();
+
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [pestData, setPestData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Select first device automatically
+  /* auto-select device */
   useEffect(() => {
-    if (!devicesLoading && devices.length > 0 && !selectedDevice) {
+    if (!devicesLoading && devices.length && !selectedDevice) {
       setSelectedDevice(devices[0]);
     }
   }, [devicesLoading, devices, selectedDevice]);
@@ -228,7 +226,7 @@ export default function Pest() {
   useEffect(() => {
     if (!selectedDevice) return;
 
-    const calculatePestRisks = async () => {
+    const fetchAndCalculate = async () => {
       setLoading(true);
       try {
         // --- 1. Robust Date Calculation ---
@@ -285,16 +283,25 @@ export default function Pest() {
           { name: "San Jose Scale", ...getSanJoseScaleRisk(sanJoseScaleDD) },
         ];
 
-        setPestData(calculatedData);
-      } catch (err) {
-        console.error("Failed to fetch or process pest data:", err);
-        setPestData([]); // Clear data on error
+        const results = PESTS.map((p) => {
+          const value = Math.round(risks[p.key] || 0);
+          return {
+            name: p.name,
+            value,
+            status: getStatus(value),
+          };
+        });
+
+        setPestData(results);
+      } catch (e) {
+        console.error(e);
+        setPestData([]);
       } finally {
         setLoading(false);
       }
     };
 
-    calculatePestRisks();
+    fetchAndCalculate();
   }, [selectedDevice]);
 
   return (

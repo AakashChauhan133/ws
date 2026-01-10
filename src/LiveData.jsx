@@ -1,13 +1,17 @@
 import React, { useRef, useEffect, useState } from "react";
-import Sidebar from "./Sidebar";
 import { Loader2 } from "lucide-react";
-import DeviceLocation from "./components/deviceLocation";
+
 import { useAuth } from "./AuthProvider";
 import useLiveDataPolling from "./hooks/useLiveDataPolling";
 import API_BASE_URL from "./config";
 import axios from "axios";
 import TempCard from "./components/tempCard";
+import RainfallCard from "./components/rainfallCard";
 import LightIntensityGauge from "./components/lightIntensity";
+import LeafWetnessCard from "./components/leafWetness";
+import SimpleHumidityCard from "./components/humidity";
+import WindCompass from "./components/windCompass";
+import PressureCard from "./components/pressure";
 import DepthTemperatureGauge from "./components/depthTemp";
 import DepthHumidityGauge from "./components/depthHumidity";
 import SurfaceTemperatureGauge from "./components/surfaceTemp";
@@ -51,7 +55,7 @@ export default function LiveData() {
       console.log("Starting timer...");
       setLoadingSeconds(0);
       interval = setInterval(() => {
-        setLoadingSeconds((prev) => prev + 1);
+        setLoadingSeconds((p) => p + 1);
       }, 1000);
     }
 
