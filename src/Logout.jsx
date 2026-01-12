@@ -29,7 +29,7 @@ export default function Logout() {
         throw new Error("Logout failed");
       }
   
-      // 🔥 IMPORTANT
+      //  IMPORTANT
       setAuthenticated(false);
   
       setStatus('success');

@@ -9,7 +9,8 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
+  Brain,
 } from "lucide-react";
 
 import { useSidebar } from "./context/SidebarContext";
@@ -20,12 +21,14 @@ export default function Sidebar() {
 
   const navItems = [
     { name: "Live Data", path: "/livedata", icon: LayoutDashboard },
+    { name: "Kesan AI", path: "/kisan", icon: Brain },
     { name: "Weekly", path: "/weekly", icon: Calendar },
     { name: "Export", path: "/export", icon: Download },
     { name: "Pest", path: "/pest", icon: Bug },
     { name: "Fungus", path: "/fungus", icon: Leaf },
     { name: "Spray", path: "/spray", icon: SprayCan },
     { name: "User", path: "/user", icon: User },
+    
   ];
 
   return (
@@ -111,4 +114,4 @@ export default function Sidebar() {
       </div>
     </aside>
   );
-}
+}//changed the icon for Kesan AI to Brain from lucide-react
