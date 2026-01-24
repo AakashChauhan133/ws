@@ -75,14 +75,11 @@ const KisanChatbot = () => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(
-        "https://kesan.onrender.com/api",
-        {
-          message: question,
-          device_id: selectedDevice.d_id,
-          conversation_id: conversationId,
-        }
-      );
+      const response = await axios.post("https://kesan.onrender.com/api/chat", {
+        message: question,
+        device_id: selectedDevice.d_id,
+        conversation_id: conversationId,
+      });
 
       const { response: reply, conversation_id } = response.data;
       setConversationId(conversation_id);
