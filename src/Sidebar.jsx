@@ -9,7 +9,8 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
+  Brain,
 } from "lucide-react";
 
 import { useSidebar } from "./context/SidebarContext";
@@ -20,6 +21,7 @@ export default function Sidebar() {
 
   const navItems = [
     { name: "Live Data", path: "/livedata", icon: LayoutDashboard },
+    { name: "Kesan AI", path: "/kisan", icon: Brain },
     { name: "Weekly", path: "/weekly", icon: Calendar },
     { name: "Export", path: "/export", icon: Download },
     { name: "Pest", path: "/pest", icon: Bug },
@@ -50,7 +52,9 @@ export default function Sidebar() {
         {/* TOGGLE BUTTON */}
         <button
           onClick={toggleSidebar}
-          className="flex items-center justify-center
+          className="
+          hidden
+          lg:flex items-center justify-center
           w-10 h-10
           rounded-md
           bg-green-700 hover:bg-green-600
@@ -58,15 +62,6 @@ export default function Sidebar() {
         >
           {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
-
-        {/* LOGO — ONLY WHEN OPEN */}
-        {isOpen && (
-          <img
-            src={logo}
-            alt="App Logo"
-            className="w-32 h-auto object-contain"
-          />
-        )}
       </div>
 
       {/* NAVIGATION */}
@@ -78,11 +73,7 @@ export default function Sidebar() {
             className={({ isActive }) =>
               `relative flex items-center gap-4 px-5 py-4 text-base
                transition-all duration-200
-               ${
-                 isActive
-                   ? "bg-green-800"
-                   : "hover:bg-green-800/60"
-               }`
+               ${isActive ? "bg-green-800" : "hover:bg-green-800/60"}`
             }
           >
             {/* ACTIVE SECTION BAR */}
@@ -111,4 +102,4 @@ export default function Sidebar() {
       </div>
     </aside>
   );
-}
+} //changed the icon for Kesan AI to Brain from lucide-react

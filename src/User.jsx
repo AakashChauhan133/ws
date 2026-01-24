@@ -51,7 +51,7 @@ export default function User() {
   const fetchLocation = async (lat, lon) => {
     try {
       const res = await axios.get(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`,
       );
       setLocationName(res.data.display_name || "Unknown Location");
     } catch {
@@ -75,7 +75,6 @@ export default function User() {
           ) : (
             <>
               <div className="flex items-center space-x-4">
-                <FaUserCircle className="text-green-600 text-6xl" />
                 <div>
                   <p className="font-bold text-xl">{user.name}</p>
                   <p>Email: {user.email}</p>
@@ -95,9 +94,7 @@ export default function User() {
 
         {/* Account Settings */}
         <div className="bg-white rounded-xl shadow p-6 lg:w-1/3 flex flex-col justify-center">
-          <p className="mb-3 font-medium">
-            Role: {user?.role}
-          </p>
+          <p className="mb-3 font-medium">Role: {user?.role}</p>
 
           <Link
             to="/forgotpassword"
