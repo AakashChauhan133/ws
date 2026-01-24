@@ -28,6 +28,7 @@ export default function Sidebar() {
     { name: "Fungus", path: "/fungus", icon: Leaf },
     { name: "Spray", path: "/spray", icon: SprayCan },
     { name: "User", path: "/user", icon: User },
+    
   ];
 
   return (
