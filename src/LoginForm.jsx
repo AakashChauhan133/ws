@@ -3,12 +3,11 @@ import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-import { getCSRFToken } from "./GetCSRF";
+// Note: Removed getCSRFToken as FastAPI's JWT implementation replaces the need for it.
 import API_BASE_URL from "./config";
 import { useAuth } from "./AuthProvider";
 
-export default function LoginForm({ onBack }) {
-  
+export default function LoginForm({ onBack, onToggleRegister }) {
   const navigate = useNavigate();
   const { setAuthenticated } = useAuth();
 
@@ -44,51 +43,64 @@ export default function LoginForm({ onBack }) {
     }
 
     try {
-      // 1️⃣ Get CSRF token
-      const csrf = await getCSRFToken();
-
-      // 2️⃣ Prepare form data
+      // 1️⃣ Prepare form data (FastAPI strictly requires 'username' and 'password' for OAuth2)
       const formData = new URLSearchParams();
       formData.append("username", userId);
       formData.append("password", password);
-      formData.append(csrf.name, csrf.value);
 
-      // 3️⃣ Login request
-      const res = await axios.post(
-        `${API_BASE_URL}/login`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          withCredentials: true,
-        }
-      );
+      // 2️⃣ Login request
+      const res = await axios.post(`${API_BASE_URL}/login`, formData, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        // withCredentials: true, // Optional: Keep if you are using cookies alongside JWT
+      });
 
       const result = res.data;
-    
+
       // ✅ SUCCESS — EXIT IMMEDIATELY
-      if (res.status === 200 && result?.status) {
+      // FastAPI returns 200 OK with access_token and token_type
+      if (res.status === 200 && result?.access_token) {
+        // Store the JWT token for future authenticated requests
+        localStorage.setItem("access_token", result.access_token);
+
+        // Optionally store user details if needed by your frontend
+        if (result.user) {
+          localStorage.setItem("user", JSON.stringify(result.user));
+        }
+
         setError(""); // force clear
         setSuccess(true);
-        
+
         setAuthenticated(true);
         setTimeout(() => {
-          navigate("/livedata" ,{replace:true}); // relative path (basename safe)
+          navigate("/livedata", { replace: true }); // relative path (basename safe)
         }, 800);
 
-        return; 
+        return;
       }
 
-      setError(result?.message || "Login failed.");
-
+      setError("Login failed. Please try again.");
     } catch (err) {
       console.error("Login error:", err);
-      setError(
-        err?.response?.data?.message ||
-        err.message ||
-        "An error occurred during login."
-      );
+
+      // FastAPI returns errors inside the "detail" key.
+      // It can be a string (401 Unauthorized) or an array (422 Validation Error).
+      const detail = err?.response?.data?.detail;
+
+      let errorMessage = "An error occurred during login.";
+
+      if (typeof detail === "string") {
+        errorMessage = detail; // e.g., "Invalid credentials"
+      } else if (Array.isArray(detail)) {
+        errorMessage = "Validation Error: Please check your inputs.";
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message; // Fallback for custom errors
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -118,7 +130,7 @@ export default function LoginForm({ onBack }) {
             placeholder=" "
           />
           <label className="absolute left-4 top-2 text-xs text-green-800">
-            User ID
+            User ID (Email)
           </label>
         </div>
 
@@ -152,21 +164,33 @@ export default function LoginForm({ onBack }) {
           {loading ? "Logging in..." : "Login"}
         </button>
 
-        <div className="flex justify-between text-sm mt-2">
-          <button
-            type="button"
-            className="text-green-700 hover:underline"
-            onClick={handleForgotPassword}
-          >
-            Forgot Password?
-          </button>
-          <button
-            type="button"
-            onClick={onBack}
-            className="text-red-600 hover:underline"
-          >
-            Back
-          </button>
+        {/* Links Footer */}
+        <div className="flex flex-col space-y-3 mt-4 text-sm">
+          <div className="flex justify-between">
+            <button
+              type="button"
+              className="text-green-700 hover:underline"
+              onClick={handleForgotPassword}
+            >
+              Forgot Password?
+            </button>
+            <button
+              type="button"
+              onClick={onToggleRegister}
+              className="text-green-700 hover:underline font-semibold"
+            >
+              Create Account
+            </button>
+          </div>
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              onClick={onBack}
+              className="text-red-600 hover:underline"
+            >
+              Back to Card
+            </button>
+          </div>
         </div>
       </form>
     </div>

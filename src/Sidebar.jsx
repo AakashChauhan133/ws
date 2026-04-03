@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 import { useSidebar } from "./context/SidebarContext";
-import logo from "./image.png";
 
 export default function Sidebar() {
   const { isOpen, toggleSidebar } = useSidebar();
@@ -28,7 +27,7 @@ export default function Sidebar() {
     { name: "Fungus", path: "/fungus", icon: Leaf },
     { name: "Spray", path: "/spray", icon: SprayCan },
     { name: "User", path: "/user", icon: User },
-    
+    { name: "Admin Devices", path: "/admin/devices", icon: LayoutDashboard },
   ];
 
   return (
@@ -37,34 +36,6 @@ export default function Sidebar() {
       transition-all duration-300 ease-in-out
       ${isOpen ? "w-72" : "w-16"}`}
     >
-      {/* HEADER */}
-      <div className="flex flex-col gap-4 p-4 border-b border-green-800">
-        {/* LOGO — ONLY WHEN OPEN */}
-        {isOpen && (
-          <div className="flex items-center justify-center">
-            <img
-              src={logo}
-              alt="App Logo"
-              className="w-32 h-auto object-contain"
-            />
-          </div>
-        )}
-
-        {/* TOGGLE BUTTON */}
-        <button
-          onClick={toggleSidebar}
-          className="
-          hidden
-          lg:flex items-center justify-center
-          w-10 h-10
-          rounded-md
-          bg-green-700 hover:bg-green-600
-          transition-all duration-300"
-        >
-          {isOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-      </div>
-
       {/* NAVIGATION */}
       <nav className="mt-6 flex flex-col gap-2">
         {navItems.map(({ name, path, icon: Icon }) => (

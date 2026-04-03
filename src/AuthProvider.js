@@ -1,7 +1,6 @@
-// src/AuthProvider.js
-import { createContext, useContext, useEffect, useState } from 'react';
-import axios from 'axios';
-import API_BASE_URL from './config';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import axios from "axios";
+import API_BASE_URL from "./config";
 
 const AuthContext = createContext();
 
@@ -9,46 +8,57 @@ export const AuthProvider = ({ children }) => {
   const [authenticated, setAuthenticated] = useState(null); // null = loading
   const [devices, setDevices] = useState([]);
   const [devicesLoading, setDevicesLoading] = useState(false);
-  const [devicesError, setDevicesError] = useState('');
+  const [devicesError, setDevicesError] = useState("");
 
   const fetchDevices = async () => {
     setDevicesLoading(true);
     try {
-      setDevicesError('');
-      const res = await axios.get(`${API_BASE_URL}/getDevices`, {
-        withCredentials: true,
+      setDevicesError("");
+      const token = localStorage.getItem("access_token");
+
+      // Updated to match your FastAPI /devices/ route and use the JWT token
+      const res = await axios.get(`${API_BASE_URL}/devices/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      if (res.data?.status) {
-        setDevices(res.data.data || []);
-      } else {
-        setDevices([]);
-        setDevicesError(res.data?.message || 'Failed to load devices');
-      }
+      // Handle both possible JSON schemas (direct array or nested in { data: [...] })
+      const fetchedDevices = Array.isArray(res.data)
+        ? res.data
+        : res.data?.data || [];
+      setDevices(fetchedDevices);
     } catch (err) {
       setDevices([]);
+
+      // If the JWT token is invalid or expired, the API will return 401
+      if (err.response?.status === 401) {
+        setAuthenticated(false);
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("user");
+      }
+
       setDevicesError(
-        err?.response?.data?.message || err.message || 'Network error'
+        err?.response?.data?.detail ||
+          err?.response?.data?.message ||
+          err.message ||
+          "Network error",
       );
     } finally {
       setDevicesLoading(false);
     }
   };
 
-  // 🔹 Check auth ONCE
+  // 🔹 Check auth ONCE using JWT from localStorage instead of checkSession endpoint
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await axios.get(`${API_BASE_URL}/checkSession`, {
-          withCredentials: true,
-        });
+    const checkAuth = () => {
+      const token = localStorage.getItem("access_token");
 
-        if (res.data?.status) {
-          setAuthenticated(true);
-        } else {
-          setAuthenticated(false);
-        }
-      } catch {
+      if (token) {
+        // Token exists locally. We set authenticated to true immediately for a fast UI load.
+        // If the token is actually expired, the subsequent fetchDevices() call will catch the 401 and log them out.
+        setAuthenticated(true);
+      } else {
         setAuthenticated(false);
       }
     };
@@ -56,12 +66,12 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  // 🔹 Fetch devices only after auth
+  // 🔹 Fetch devices only after auth is confirmed to be true
   useEffect(() => {
     if (!authenticated) return;
 
     fetchDevices();
-    const interval = setInterval(fetchDevices, 3600000);
+    const interval = setInterval(fetchDevices, 3600000); // refresh every hour
     return () => clearInterval(interval);
   }, [authenticated]);
 

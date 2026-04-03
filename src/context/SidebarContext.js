@@ -5,10 +5,10 @@ const SidebarContext = createContext();
 
 // 2️ Provider (the notebook owner)
 export function SidebarProvider({ children }) {
-  const [isOpen, setIsOpen] = useState(true); // sidebar starts open
+  const [isOpen, setIsOpen] = useState(false); // sidebar starts open
 
   function toggleSidebar() {
-    setIsOpen(prev => !prev);
+    setIsOpen((prev) => !prev);
   }
 
   return (

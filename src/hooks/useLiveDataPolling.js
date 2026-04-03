@@ -43,21 +43,29 @@ export default function useLiveDataPolling(deviceId) {
       setLoading(true);
       setError(null);
 
+      // 1. Retrieve the JWT Token saved from LoginForm
+      const token = localStorage.getItem("access_token");
+
+      // 2. Fetch the latest history batch (FastAPI route)
       const response = await axios.get(
-        `${API_BASE_URL}/live-data/${deviceId}`,
-        { withCredentials: true }
+        `${API_BASE_URL}/readings/${deviceId}/history`,
+        {
+          params: { limit: 10 }, // Pulling recent batch to extract latest live state
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
 
       if (!isMountedRef.current) return;
 
-      // Extract the real live object
-      const live = response.data?.data?.[0];
-      if (!live) {
+      const resultsArray = response.data?.data;
+      if (!resultsArray || resultsArray.length === 0) {
         throw new Error("No live data received");
       }
 
-      // Correct normalization
-      const normalized = normalizeLiveData(live);
+      // 3. Normalize the array into a single "Live State" object
+      const normalized = normalizeLiveData(resultsArray);
       setData(normalized);
 
       // reset backoff on success
@@ -72,6 +80,9 @@ export default function useLiveDataPolling(deviceId) {
         setError("Session expired");
         clearTimeout(timeoutRef.current);
         return;
+      } else if (err.response?.status === 422) {
+        // FastAPI specific Validation Error logging
+        console.error("Validation Error:", err.response.data.detail);
       }
 
       setError("Failed to fetch live data");
@@ -125,36 +136,67 @@ export default function useLiveDataPolling(deviceId) {
 
 /**
  * Backend → frontend normalization
- * UI NEVER touches raw API response
+ * Takes an ARRAY of recent readings and reduces it to the single latest state.
  */
-function normalizeLiveData(raw) {
+function normalizeLiveData(rawArray) {
+  // Since order is newest-first, we grab the first item
+  const latest = rawArray[0];
+
+  // SCENARIO A: Normalized EAV Database (device_sensor_id)
+  if (latest.device_sensor_id !== undefined) {
+    const recentReadings = {};
+
+    // Parse through the recent 50 rows to find the most recent value for each sensor ID
+    rawArray.forEach((reading) => {
+      if (recentReadings[reading.device_sensor_id] === undefined) {
+        recentReadings[reading.device_sensor_id] = reading.value;
+      }
+    });
+
+    // Best-effort mapping based on known IDs (e.g., 3=temp, 4=humidity)
+    return {
+      device: {
+        id: latest.device_id || latest.d_id,
+        status: "active",
+        lastSeen: latest.recorded_at,
+        location: { latitude: null, longitude: null, address: "Available" },
+      },
+      sensors: {
+        temperature: recentReadings[3] ?? null,
+        humidity: recentReadings[4] ?? null,
+        // Add additional mapped IDs as needed (e.g., rainfall, wind)
+      },
+    };
+  }
+
+  // SCENARIO B: Flat/Grouped Database
   return {
     device: {
-      id: raw.device_id,
-      status: raw.device_status,
-      lastSeen: raw.timestamp,
+      id: latest.device_id || latest.d_id,
+      status: latest.device_status || "active",
+      lastSeen: latest.timestamp || latest.recorded_at,
       location: {
-        latitude: raw.latitude,
-        longitude: raw.longitude,
-        address: raw.address,
+        latitude: latest.latitude,
+        longitude: latest.longitude,
+        address: latest.address,
       },
     },
     sensors: {
-      temperature: raw.temp,
-      humidity: raw.humidity,
-      rainfall: raw.rainfall,
-      lightIntensity: raw.light_intensity,
-      windSpeed: raw.wind_speed,
-      windDirection: raw.wind_direction,
-      pressure: raw.pressure,
-      leafWetness: raw.leafwetness,
+      temperature: latest.temp,
+      humidity: latest.humidity,
+      rainfall: latest.rainfall,
+      lightIntensity: latest.light_intensity,
+      windSpeed: latest.wind_speed,
+      windDirection: latest.wind_direction,
+      pressure: latest.pressure,
+      leafWetness: latest.leafwetness,
       depth: {
-        temperature: raw.depth_temp,
-        humidity: raw.depth_humidity,
+        temperature: latest.depth_temp,
+        humidity: latest.depth_humidity,
       },
       surface: {
-        temperature: raw.surface_temp,
-        humidity: raw.surface_humidity,
+        temperature: latest.surface_temp,
+        humidity: latest.surface_humidity,
       },
     },
   };

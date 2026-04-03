@@ -1,0 +1,48 @@
+name: Direct Deploy to Hostinger VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Get the latest code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step 2: Sync files to VPS using SSH
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          source: "."
+          target: "/home/${{ secrets.VPS_USERNAME }}/app"
+
+      # Step 3: Build and Run Docker on the VPS
+      - name: Remote Docker Build and Run
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            cd /home/${{ secrets.VPS_USERNAME }}/app
+
+            # Build the image locally on the VPS
+            docker build -t react-frontend-local .
+
+            # Stop and remove existing container
+            docker stop react-frontend-container || true
+            docker rm react-frontend-container || true
+
+            # Run the new container
+            docker run -d --name react-frontend-container -p 80:80 react-frontend-local
+
+            # Cleanup dangling images to save disk space
+            docker image prune -f

@@ -23,12 +23,18 @@ import User from "./User";
 
 import { SidebarProvider } from "./context/SidebarContext";
 
+// --- Admin Imports ---
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import DeviceManager from "./pages/admin/DeviceManager";
+import UserManager from "./pages/admin/UserManager";
+import SensorManager from "./pages/admin/SensorManager"; // <-- Added import
+
 function App() {
   return (
     <Router basename="/station">
       <AuthProvider>
         <Routes>
-
           {/* PUBLIC ROUTES */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<WeatherBanner />} />
@@ -38,6 +44,7 @@ function App() {
 
           {/* PROTECTED ROUTES */}
           <Route element={<ProtectedRoute />}>
+            {/* --- FARMER / REGULAR USER ROUTES --- */}
             <Route
               element={
                 <SidebarProvider>
@@ -55,8 +62,22 @@ function App() {
               <Route path="/spray" element={<Spray />} />
               <Route path="/user" element={<User />} />
             </Route>
-          </Route>
 
+            {/* --- ADMIN ROUTES --- */}
+            <Route
+              element={
+                <SidebarProvider>
+                  <AdminLayout />
+                </SidebarProvider>
+              }
+            >
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/devices" element={<DeviceManager />} />
+              <Route path="/admin/sensors" element={<SensorManager />} />{" "}
+              {/* <-- Added route */}
+              <Route path="/admin/users" element={<UserManager />} />
+            </Route>
+          </Route>
         </Routes>
       </AuthProvider>
     </Router>

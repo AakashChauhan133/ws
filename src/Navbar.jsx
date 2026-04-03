@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react"; // icon package, can replace with Heroicons or SVG
-import logo from "./image.png";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,7 +16,9 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex-shrink-0 text-xl font-bold text-blue-600">
-            <img src={logo} alt="logo" className="h-10 w-auto " />
+            <h1 className="text-white justify-center pl-20 text-4xl">
+              G-Sense
+            </h1>
           </div>
 
           {/* Desktop Links */}
